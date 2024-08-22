@@ -12,14 +12,20 @@ import pickle
 import td_lib 
 import os
 import matplotlib.pyplot as plt
+from pathlib import Path
 import bayes_csc
 from IPython import embed
 import csv
 import sys
 import json
 
+def get_data():
+    directory = Path(__file__).parents[2]/'data/checkshot_sonic_table_well.csv'
+    dataframe_sonic_checkshot = pd.read_csv(directory)
+    return dataframe_sonic_checkshot
 #dataframe = pd.read_csv('td_tool/test_well_8.csv')
-dataframe_sonic_checkshot = pd.read_csv('td_tool/checkshot_sonic_table.csv')
+dataframe_sonic_checkshot = get_data()
+
 df_output = []
 n=0
 
@@ -36,16 +42,16 @@ doExportPng = 1 # export result as numerical pkl file
 doExportCsv = 1
 
 # Input data
-root_folder = 'demo_example/'
-time_depth_folder = root_folder + 'input/td/'
-well_pkl_folder = root_folder + 'input/pkl/'
-water_depth_file = root_folder + 'input/UNIQUE_WELLBORE_IDENTIFIER_WATER_DEPTH.csv'
+root_folder = Path(__file__).parents[1]/'demo_example/'
+time_depth_folder = str(root_folder/'input/td/')
+well_pkl_folder = str(root_folder/'input/pkl/')
+water_depth_file = str(root_folder/'input/UNIQUE_WELLBORE_IDENTIFIER_WATER_DEPTH.csv')
 
-td_output_folder = root_folder + 'output/bayes_csc/'
-png_output_folder = root_folder + 'output/bayes_csc/png/'
-pkl_output_folder = root_folder + 'output/bayes_csc/pkl/'
-csv_output_folder = root_folder + 'output/bayes_csc/csv/'
-files_in_folder = os.listdir(pkl_output_folder)
+td_output_folder = str(root_folder/'output/bayes_csc/')
+png_output_folder = str(root_folder/'output/bayes_csc/png/')
+pkl_output_folder = str(root_folder/'output/bayes_csc/pkl/')
+csv_output_folder = str(root_folder/'output/bayes_csc/csv/')
+files_in_folder = str(os.listdir(pkl_output_folder))
 files_in_folder = [well.replace('.pkl','') for well in files_in_folder]
 total_wells = dataframe_sonic_checkshot.uwi.unique()
 total_wells = [well.replace(' ','_').replace('/','_') for well in total_wells]
@@ -132,7 +138,7 @@ for i in dataframe_sonic_checkshot.uwi.unique():
             ii = (td_z > water_depth)
             #td_z = np.union1d([0, water_depth], td_z[ii])
             #td_t = np.union1d([0, water_twt], td_t[ii])
-        from pandasgui import show        
+    
         # add top part of logs
         if extend2zero and runWell:
             print('EXTEND logs to z = 0')
@@ -188,12 +194,13 @@ for i in dataframe_sonic_checkshot.uwi.unique():
                                     'water_depth': water_depth, 'water_vel': water_velocity, \
                                     'df_well': df_well}
                 df_output.append(bayes_csc_out)
+                embed()
                 # export numerical output data
                 if doExportPkl:
                     
                     output_pkl_file = pkl_output_folder + ww + '.pkl'                    
                     print('Exporting PKL: ' + output_pkl_file + ' ...')
-                    with open(output_pkl_file, 'wb') as handle:
+                    with open(str(output_pkl_file), 'wb') as handle:
                         pickle.dump(bayes_csc_out, handle, protocol = pickle.HIGHEST_PROTOCOL)
                     print ('...done')                                
                 
@@ -201,7 +208,7 @@ for i in dataframe_sonic_checkshot.uwi.unique():
                 if doExportPng:                                   
                     output_png_file = png_output_folder + ww + '.png'
                     print('Exporting PNG: ' + output_png_file + ' ...')     
-                    fig.savefig(output_png_file)           
+                    fig.savefig(str(output_png_file))           
                     print('...done')
 
                 

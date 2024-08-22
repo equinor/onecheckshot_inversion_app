@@ -52,7 +52,6 @@ def redatum(well_z, well_vp, td_z, td_t, zstart = 0):
     
     # get well time
     well_t = getTime(well_z, well_vp)    
-    from IPython import embed
             
     # get corresponding start time
     ff = interp1d(well_z, well_t, kind = 'linear', bounds_error = False, fill_value = 0)    
@@ -103,7 +102,6 @@ def runCsc(well_z_in, well_vp_in, td_z_in, td_t_in, par):
     # derive time
     well_t = getTime(well_z, well_vp)
     
-    from IPython import embed
     ##################################################
     # DECIMATE input logs to speed up bayesian step # 
     ##################################################
@@ -146,7 +144,6 @@ def runCsc(well_z_in, well_vp_in, td_z_in, td_t_in, par):
         C = corr_exp_mat(nc, ncorr_range, par['corr_order'])
     else:
         C = np.eye(nc)
-    embed()
     # prior covariance matrix
     Sigma_m = np.outer(std_m, std_m.T) * C
     
@@ -398,7 +395,6 @@ def makeG(well_z, td_z):
     from IPython import embed
     # depth step
     well_dz = np.diff(np.insert(well_z, 0, 0)) # assumes well_z starts depth > 0, inserts zero depth
-    from IPython import embed
     # loop through time-depth data
     for ii in range(ntd): # loop over time-depth data
         
