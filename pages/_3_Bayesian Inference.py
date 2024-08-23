@@ -30,11 +30,18 @@ df_checkshot, df_sonic, df_merged = filter_data(df_checkshot, df_sonic, raw_cks_
 
 st.write(uwi)
 
+if st.button("Run Bayesian Inference"):
+    # Your command goes here
 
+    clas = Bayesian_Inference()
+    bayes_csc_out, fig = clas.run(uwi)
 
-clas = Bayesian_Inference()
-bayes_csc_out, fig = clas.run(uwi)
+    st.pyplot(fig)
 
-st.pyplot(fig)
-
-embed()
+    st.write("You can download the new time-depth relationship here:")
+    st.download_button(
+        label='Download CSV',
+        data=bayes_csc_out['df_well'].to_csv(index=False),
+        file_name='output.csv',
+        mime='text/csv'
+    )

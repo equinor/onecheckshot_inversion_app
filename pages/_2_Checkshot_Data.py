@@ -29,7 +29,7 @@ def get_data():
     
     # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
     DATA_FILENAME = Path(__file__).parents[1]/'data/checkshot_sonic_table.csv'
-    raw_cks_df = pd.read_csv(DATA_FILENAME)
+    raw_cks_df = pd.read_csv(DATA_FILENAME, index_col=False)
     df_checkshot = raw_cks_df[['uwi','tvd_ss','twt picked', 'average velocity', 'interval velocity']].dropna(subset='twt picked')
     df_sonic = raw_cks_df[['uwi','tvd_ss','vp', ]].dropna(subset='vp')
     df_sonic['vp'] = df_sonic['vp'].fillna(False)
