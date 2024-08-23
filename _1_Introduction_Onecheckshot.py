@@ -16,7 +16,9 @@ st.set_page_config(
 # -----------------------------------------------------------------------------
 # Declare some useful functions.
 
+st.write("""
+## OneCheckshot App
 
-
-
-
+In this app you can compare checkshot data with Sonic Log data available.
+         
+""")
