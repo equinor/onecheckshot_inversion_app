@@ -19,23 +19,20 @@ import git
 from runBayesCsc_2 import Bayesian_Inference
 from bayes_csc import getTime
 
-
-from _2_Checkshot_Data import get_data, return_well, filter_data
+from _2_Checkshot_Data import get_data, filter_data
 
 raw_cks_df, df_checkshot, df_sonic = get_data()
 wells = raw_cks_df.uwi.unique().tolist()
-selected_value = st.selectbox(f"Select Well", options=wells)
-uwi = selected_value
+uwi = st.selectbox(f"Select Well", options=wells)
 df_checkshot, df_sonic, df_merged = filter_data(df_checkshot, df_sonic, raw_cks_df, uwi)
+st.write(f'Well Selected: {uwi}')
+st.write('You can either run the bayesian inference with Standard values or select some of the parameters yourself.')
 
-st.write(uwi)
-
-if st.button("Run Bayesian Inference"):
+if st.button("Calculate Bayesian Inference"):
     # Your command goes here
 
     clas = Bayesian_Inference()
     bayes_csc_out, fig = clas.run(uwi)
-
     st.pyplot(fig)
 
     st.write("You can download the new time-depth relationship here:")
@@ -45,3 +42,5 @@ if st.button("Run Bayesian Inference"):
         file_name='output.csv',
         mime='text/csv'
     )
+
+

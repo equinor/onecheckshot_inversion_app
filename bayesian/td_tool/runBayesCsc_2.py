@@ -171,7 +171,7 @@ class Bayesian_Inference():
                 try:
                 #if 1:
 
-                    st.write(f'Calculating Bayesian time-depth correction for {uwi}...')
+                    st.write(f'Calculating Bayesian time-depth correction for {uwi}... This might take some time.')
                     well_vp, well_z = bayes_csc.runCsc(well_z, well_vp, td_z, td_t, par)
                     
                     print('...done')
@@ -190,7 +190,7 @@ class Bayesian_Inference():
                     bayes_csc_out = {'well_name': ww, 'td' : td, \
                                         'water_depth': water_depth, 'water_vel': water_velocity, \
                                         'df_well': df_well}
-                    
+
                 except Exception as e:
                     print(e.args)
                     print('ERROR: Bayesian step failed')
@@ -200,3 +200,5 @@ class Bayesian_Inference():
             pass
         return bayes_csc_out, fig
 
+clas = Bayesian_Inference()
+x = clas.run(uwi='NO 16/2-1')

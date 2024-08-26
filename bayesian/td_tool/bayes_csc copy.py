@@ -11,9 +11,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy import ndimage, misc
 import td_lib
-import plotly.express as px
-import plotly.graph_objects as go
-from IPython import embed
+
 
 def mean_filter(val, N):
     
@@ -183,14 +181,6 @@ def runCsc(well_z_in, well_vp_in, td_z_in, td_t_in, par):
     # derive posterior data
     well_vp_dec_post = 1 / mu_post
         
-    # derive posterior covariance for velocity (from slowness):
-    v_min = 1/(mu_post + Sigma_post)
-    v_max = 1/(mu_post - Sigma_post)
-
-    std_vel = well_vp_dec_post - v_min
-
-    
-
     ####################################
     # RESAMPLE to undecimated sampling #
     ####################################
@@ -199,8 +189,7 @@ def runCsc(well_z_in, well_vp_in, td_z_in, td_t_in, par):
     # resample back to original depth sampling via time curve    
     well_t_dec_post = getTime(well_z_dec, well_vp_dec_post)
     ff = interp1d(np.insert(well_z_dec, 0, 0), np.insert(well_t_dec_post, 0, 0), kind = 'linear', bounds_error = False, fill_value = np.nan)                             
-    well_t_post = ff(well_z)
-
+    well_t_post = ff(well_z)     
     
     # median filtering of time curve
     #well_t_post = ndimage.median_filter(well_t_post, size = 5)    
@@ -540,6 +529,7 @@ def bayes_well_plot(df_well, td_z, td_t, well_s, water_depth = np.nan, water_vel
     #well_vp_in = df_well['VP_IN'].values
     well_vp_ext = df_well['VP_EXT'].values
     well_vp = df_well['VP_BAYES'].values
+    
     # derive data
     td_vp = td_lib.getVel(td_z, td_t)
     well_t_ext = getTime(well_z, well_vp_ext)
@@ -548,7 +538,7 @@ def bayes_well_plot(df_well, td_z, td_t, well_s, water_depth = np.nan, water_vel
     td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = td_lib.getDrift(td_z, td_t, well_z, well_t_ext)    
     td_drift_t, td_drift_z, well_drift_t, well_drift_z = td_lib.getDrift(td_z, td_t, well_z, well_t)    
     
-
+    
     
     fig = plt.figure('Time-Depth QC-plot')
     fig.clf()

@@ -46,7 +46,7 @@ class Connection_Database:
             time double precision not null
             )"""
         cur.execute(create_table_sql)
-        embed()
+ 
         df.to_sql(table_name, self.conn, if_exists='replace', index=False)
         self.conn.commit()
         
