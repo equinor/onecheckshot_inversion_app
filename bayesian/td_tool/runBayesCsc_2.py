@@ -73,10 +73,12 @@ class Bayesian_Inference():
         # END: PARAMETERS #
         ###################
 
+        dataframe = dataframe_sonic_checkshot
+        df_checkshot = dataframe[['tvd_ss','twt picked', 'average velocity', 'interval velocity']].dropna(subset='twt picked')
+        df_sonic = dataframe[['tvd_ss','vp', ]].dropna(subset='vp')
+
         try:
-            dataframe = dataframe_sonic_checkshot
-            df_checkshot = dataframe[['tvd_ss','twt picked', 'average velocity', 'interval velocity']].dropna(subset='twt picked')
-            df_sonic = dataframe[['tvd_ss','vp', ]].dropna(subset='vp')
+
 
             # water depths
             print('Reading water depth file ... ')
@@ -132,8 +134,8 @@ class Bayesian_Inference():
                 water_twt = df_checkshot.loc[df_checkshot['average velocity'] == 1478]['twt picked']
                 water_twt = float(water_twt.iloc[0])
 
-                ii = (td_z > water_depth)
-                #td_z = np.union1d([0, water_depth], td_z[ii])
+                #ii = (td_z > water_depth)
+                ##td_z = np.union1d([0, water_depth], td_z[ii])
                 #td_t = np.union1d([0, water_twt], td_t[ii])
 
             # add top part of logs

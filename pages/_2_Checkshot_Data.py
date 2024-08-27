@@ -148,23 +148,32 @@ if __name__ == '__main__':
     
     st.write("## Definition of uncertainties")
     
+    df_checkshot_plot2 = df_checkshot.copy(deep=True)
     col3, col4 = st.columns(2)
     with col3:
         container1 = st.container()
         with container1:
             # Create your plot here
             fig1 = go.Figure()
-            std_checkshot = st.slider("Varying Parameter", 0.005, 0.05)
-            df_checkshot['std_checkshot'] = std_checkshot
-            fig1 = px.scatter(df_checkshot, x="twt picked", y="tvd_ss")
+            std_checkshot = st.slider("Standard deviation: TWT", 0.005, 0.05)
+            df_checkshot_plot2['std_checkshot'] = std_checkshot
+            #fig1 = px.scatter(df_checkshot_plot2, x="twt picked", y="tvd_ss")
+
+            df_checkshot_plot2['u+std'] = df_checkshot_plot2["twt picked"] + df_checkshot_plot2['std_checkshot']
+            df_checkshot_plot2['u-std'] = df_checkshot_plot2["twt picked"] - df_checkshot_plot2['std_checkshot']           
+            fig1 = go.Figure()
+            fig1.add_trace(go.Line(x=df_checkshot_plot2["twt picked"],y=df_checkshot_plot2['tvd_ss'],name="Sonic Log", marker_color='blue'))
+            fig1.add_trace(go.Line(x=df_checkshot_plot2['u+std'],y=df_checkshot_plot2['tvd_ss'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
+            fig1.add_trace(go.Line(x=df_checkshot_plot2['u-std'],y=df_checkshot_plot2['tvd_ss'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
+
             fig1.update_layout(
             title=f'Checkshot data : Well {uwi}',
             xaxis_title="TWT (ms)",
             yaxis_title='TVDSS (m)',
             autosize=False,
-            width=400,
-            height=900,
-            yaxis_range=[max(df_checkshot["tvd_ss"]), min(df_checkshot["tvd_ss"])])
+            width=900,
+            height=1800,
+            yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])])
             
             st.plotly_chart(fig1)
 
@@ -173,16 +182,19 @@ if __name__ == '__main__':
     with col4:
         container2 = st.container()
         with container2:
-            std_sonic = st.slider("Varying Parameter", 400, 600)
+            std_sonic = st.slider("Standard deviation: Vp", 400, 600)
             df_sonic_plot2 = df_sonic_plot2.dropna(subset=['vp'])
             df_sonic_plot2['std_sonic'] = std_sonic   
             df_sonic_plot2['u+std'] = df_sonic_plot2['vp'] + df_sonic_plot2['std_sonic']
             df_sonic_plot2['u-std'] = df_sonic_plot2['vp'] - df_sonic_plot2['std_sonic']           
             fig2 = go.Figure()
-            fig2.add_trace(go.Line(x=df_sonic_plot2['vp'],y=df_sonic_plot2['tvd_ss'],name="Sonic Log"))
-            fig2.add_trace(go.Line(x=df_sonic_plot2['u+std'],y=df_sonic_plot2['tvd_ss'],name="u+std"))
-            fig2.add_trace(go.Line(x=df_sonic_plot2['u-std'],y=df_sonic_plot2['tvd_ss'],name="u+std"))
+            fig2.add_trace(go.Line(x=df_sonic_plot2['vp'],y=df_sonic_plot2['tvd_ss'],name="Sonic Log", marker_color='blue'))
+            fig2.add_trace(go.Line(x=df_sonic_plot2['u+std'],y=df_sonic_plot2['tvd_ss'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
+            fig2.add_trace(go.Line(x=df_sonic_plot2['u-std'],y=df_sonic_plot2['tvd_ss'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
 
+            # Filling the area between the upper and lower bounds
+            
+            
             fig2.update_traces(connectgaps=True) 
             fig2.update_layout(
             title=f'Sonic Log data : Well {uwi}',
