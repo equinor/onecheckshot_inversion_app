@@ -10,10 +10,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy import ndimage, misc
-import bayesian.td_tool.td_lib
+from IPython import embed
+
+embed()
+import td_tool.td_lib
 import plotly.express as px
 import plotly.graph_objects as go
-from IPython import embed
+
 
 def mean_filter(val, N):
     
@@ -90,232 +93,232 @@ def redatum(well_z, well_vp, td_z, td_t, zstart = 0):
     # return output
     return well_z, well_vp, td_z, td_t, well_z_top, well_vp_top, td_z_top, td_t_top
     
-
-def runCsc(well_z_in, well_vp_in, td_z_in, td_t_in, par):
-        
-    ##########################
-    # REDATUM to start depth #
-    # SPLIT at start depth   #
-    ##########################
-    
-    zstart = par['zstart']    
-    well_z, well_vp, td_z, td_t, well_z_top, well_vp_top, td_z_top, td_t_top = redatum(well_z_in, well_vp_in, td_z_in, td_t_in, zstart)
-
-    # derive time
-    well_t = getTime(well_z, well_vp)
-    
-    ##################################################
-    # DECIMATE input logs to speed up bayesian step # 
-    ##################################################
-    
-    # decimate according to bayes step
-    istep_bayes = par['istep_bayes']    
-    ibayes = np.arange(istep_bayes - 1, len(well_z), istep_bayes)    
-    ibayes[-1] = len(well_z)-1 # ensure that last sample is included
-    well_z_dec = well_z[ibayes]
-    well_t_dec = well_t[ibayes]
-    well_vp_dec = getVel(well_z_dec, well_t_dec)
-    
-    ###############
-    # PRIOR model #        
-    ###############
-
-    # set model uncertainty
-    if par['std_vp_mode'] == 1: # percentage
-        well_vp_std_dec = well_vp_dec * par['std_vp_perc'] 
-    elif par['std_vp_mode'] == 2: # constant velocity
-        well_vp_std_dec = well_vp_dec * 0 + par['std_vp_const']
-        
-    # prior model expectation value
-    mu_m = 1 / well_vp_dec
-    
-    # prior model standard deviation    
-    #std_m = (1/2) * ((well_vp_dec - well_vp_std_dec)**(-1.0) - (well_vp_dec + well_vp_std_dec)**(-1.0))
-    #Trick to calculate standard deviation for slowness
-    s_max = 1/(well_vp_dec-well_vp_std_dec)
-    s_min = 1/(well_vp_dec+well_vp_std_dec)
-
-    std_m = (1/well_vp_dec)-s_min #standard deviation prior model for slowness
-
-    
-    # add spatial correlation
-    dz_median = np.median(np.diff(well_z_dec))
-    ncorr_range = par['corr_range'] / dz_median
-    nc = len(std_m)
-    if par['apply_corr']:
-        C = corr_exp_mat(nc, ncorr_range, par['corr_order'])
-    else:
-        C = np.eye(nc)
-    # prior covariance matrix
-    Sigma_m = np.outer(std_m, std_m.T) * C
-    
-    ########
-    # DATA #        
-    ########
-    
-    # data is check-shot times
-    d = td_t
-    
-    # set data uncertainty
-    if par['std_t_mode'] == 1:
-        std_e = td_t * par['std_t_perc']
-    else:
-        std_e = 0 * td_t + par['std_t_const']
- 
-    # testing....
-    std_e_min = par['std_t_const']
-    std_e_max = 10 * std_e_min
-    rr = 500 # length (m) for which exponential is reduced to 10% of initial value
-    std_e = std_e_min + (std_e_max - std_e_min) * np.exp(- np.log(10) * td_z / rr)       
-#     print(std_e[:10])
-        
-    # data covariance matrix
-    Sigma_e = np.diag(std_e * std_e)          
-    #################
-    # BAYESIAN step #
-    #################
-    
-    # get G matrix  
-    G = makeG(well_z_dec, td_z) 
-    # get solution
-    mu_post,Sigma_post = PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
-    
-    # derive posterior data
-    well_vp_dec_post = 1 / mu_post
-        
-    # derive posterior covariance for velocity (from slowness):
-    v_min = 1/(mu_post + Sigma_post)
-    v_max = 1/(mu_post - Sigma_post)
-
-    std_vel = well_vp_dec_post - v_min
-
-    
-
-    ####################################
-    # RESAMPLE to undecimated sampling #
-    ####################################
-    
-    
-    # resample back to original depth sampling via time curve    
-    well_t_dec_post = getTime(well_z_dec, well_vp_dec_post)
-    ff = interp1d(np.insert(well_z_dec, 0, 0), np.insert(well_t_dec_post, 0, 0), kind = 'linear', bounds_error = False, fill_value = np.nan)                             
-    well_t_post = ff(well_z)
-
-    
-    # median filtering of time curve
-    #well_t_post = ndimage.median_filter(well_t_post, size = 5)    
-        
-    # get output velocity from interpolated time
-    well_vp_post = getVel(well_z, well_t_post)
-    well_vp_diff = well_vp_post - well_vp
-    
-#     print(well_vp_diff[:10])
-    
-    # final smoothing of velocity update
-    if 1:
-        #N = 50
-        #well_vp_diff = np.convolve(well_vp_diff, np.ones((N,))/N, mode='same')        
-        N = 25
-        well_vp_diff = mean_filter(well_vp_diff, N)
-        well_vp_post = well_vp + well_vp_diff
-   
-#     print(well_vp_diff[:10])
+class Run_Bayesian():
+    def runCsc(well_z_in, well_vp_in, td_z_in, td_t_in, par):
             
-    ###########################
-    # REDATUM back to initial #
-    ###########################
-    
+        ##########################
+        # REDATUM to start depth #
+        # SPLIT at start depth   #
+        ##########################
         
-    # add start depth 
-    well_z_out = well_z_in
-    well_vp_out = np.insert(well_vp_post, 0, well_vp_top)            
+        zstart = par['zstart']    
+        well_z, well_vp, td_z, td_t, well_z_top, well_vp_top, td_z_top, td_t_top = redatum(well_z_in, well_vp_in, td_z_in, td_t_in, zstart)
 
-    #############
-    # QC Figure #    
-    #############   
+        # derive time
+        well_t = getTime(well_z, well_vp)
+        
+        ##################################################
+        # DECIMATE input logs to speed up bayesian step # 
+        ##################################################
+        
+        # decimate according to bayes step
+        istep_bayes = par['istep_bayes']    
+        ibayes = np.arange(istep_bayes - 1, len(well_z), istep_bayes)    
+        ibayes[-1] = len(well_z)-1 # ensure that last sample is included
+        well_z_dec = well_z[ibayes]
+        well_t_dec = well_t[ibayes]
+        well_vp_dec = getVel(well_z_dec, well_t_dec)
+        
+        ###############
+        # PRIOR model #        
+        ###############
+
+        # set model uncertainty
+        if par['std_vp_mode'] == 1: # percentage
+            well_vp_std_dec = well_vp_dec * par['std_vp_perc'] 
+        elif par['std_vp_mode'] == 2: # constant velocity
+            well_vp_std_dec = well_vp_dec * 0 + par['std_vp_const']
+            
+        # prior model expectation value
+        mu_m = 1 / well_vp_dec
+        
+        # prior model standard deviation    
+        #std_m = (1/2) * ((well_vp_dec - well_vp_std_dec)**(-1.0) - (well_vp_dec + well_vp_std_dec)**(-1.0))
+        #Trick to calculate standard deviation for slowness
+        s_max = 1/(well_vp_dec-well_vp_std_dec)
+        s_min = 1/(well_vp_dec+well_vp_std_dec)
+
+        std_m = (1/well_vp_dec)-s_min #standard deviation prior model for slowness
+
+        
+        # add spatial correlation
+        dz_median = np.median(np.diff(well_z_dec))
+        ncorr_range = par['corr_range'] / dz_median
+        nc = len(std_m)
+        if par['apply_corr']:
+            C = corr_exp_mat(nc, ncorr_range, par['corr_order'])
+        else:
+            C = np.eye(nc)
+        # prior covariance matrix
+        Sigma_m = np.outer(std_m, std_m.T) * C
+        
+        ########
+        # DATA #        
+        ########
+        
+        # data is check-shot times
+        d = td_t
+        
+        # set data uncertainty
+        if par['std_t_mode'] == 1:
+            std_e = td_t * par['std_t_perc']
+        else:
+            std_e = 0 * td_t + par['std_t_const']
     
-    plotQC = 1
-    if plotQC:
+        # testing....
+        std_e_min = par['std_t_const']
+        std_e_max = 10 * std_e_min
+        rr = 500 # length (m) for which exponential is reduced to 10% of initial value
+        std_e = std_e_min + (std_e_max - std_e_min) * np.exp(- np.log(10) * td_z / rr)       
+    #     print(std_e[:10])
             
+        # data covariance matrix
+        Sigma_e = np.diag(std_e * std_e)          
+        #################
+        # BAYESIAN step #
+        #################
         
-        fig = plt.figure(88)
-        fig.clf()        
-        nrow = 1
-        ncol = 4
+        # get G matrix  
+        G = makeG(well_z_dec, td_z) 
+        # get solution
+        mu_post,Sigma_post = PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
         
-        ax1 = plt.subplot(nrow, ncol ,1)
-        ax2 = plt.subplot(nrow, ncol, 2, sharey = ax1)
-        ax3 = plt.subplot(nrow, ncol, 3, sharey = ax1)
-        ax4 = plt.subplot(nrow, ncol, 4, sharey = ax1)    
-        
-        yr = (np.max(well_z_dec) * 1.05, 0)
-        plt.sca(ax1)  
-        #plt.plot(well_vp_in, well_z_in, '-g')
-        plt.plot(well_vp_dec, well_z_dec,'-b')    
-        plt.plot(well_vp_dec + 2 * well_vp_std_dec, well_z_dec,'--b')
-        plt.plot(well_vp_dec - 2 * well_vp_std_dec, well_z_dec,'--b')
-        plt.plot(well_vp_dec_post, well_z_dec,'-r')        
-        #plt.plot(well_vp, well_z, '-b')
-        #plt.plot(well_vp_post, well_z, '-r')
-        #plt.plot(well_vp_out, well_z_out, ':c')    
-        plt.grid()
-        plt.ylim(yr)
-        plt.title('Velocity')
-        plt.xlabel('m/s')
-        
-        
-        plt.sca(ax2)  
-        plt.plot(well_vp_diff, well_z, '-r')
-        plt.grid()
-        plt.ylim(yr)
-        plt.title('Velocity difference')
-        
-        plt.sca(ax3) 
-        #plt.plot(getTime(well_z_in, well_vp_in), well_z_in, '-b')
-        plt.plot(getTime(well_z_dec, well_vp_dec), well_z_dec, '-b')
-        plt.plot(getTime(well_z_dec, well_vp_dec_post), well_z_dec, '-r')    
-        #plt.plot(getTime(well_z_out, well_vp_out), well_z_in, '-r')
-        #plt.plot(td_t_in, td_z_in, '.k')
-        plt.plot(td_t, td_z, '.k')
-        for ii in np.arange(len(td_z)):
-            plt.plot(td_t[ii] + [- 2 * std_e[ii], 2 * std_e[ii]], td_z[ii] + [0, 0], '-k')
+        # derive posterior data
+        well_vp_dec_post = 1 / mu_post
             
-        plt.grid()
-        plt.ylim(yr)    
-        plt.title('TWT')
-        plt.xlabel('ms')
+        # derive posterior covariance for velocity (from slowness):
+        v_min = 1/(mu_post + Sigma_post)
+        v_max = 1/(mu_post - Sigma_post)
+
+        std_vel = well_vp_dec_post - v_min
+
+        
+
+        ####################################
+        # RESAMPLE to undecimated sampling #
+        ####################################
         
         
-        plt.sca(ax4)  
-        
-        well_t_dec = getTime(well_z_dec, well_vp_dec)    
-        td_drift_t_dec, td_drift_z_dec, well_drift_t_dec, well_drift_z_dec = td_lib.getDrift(td_z, td_t, well_z_dec, well_t_dec)       
-        
+        # resample back to original depth sampling via time curve    
         well_t_dec_post = getTime(well_z_dec, well_vp_dec_post)
-        td_drift_t_dec_post, td_drift_z_dec_post, well_drift_t_dec_post, well_drift_z_dec_post = td_lib.getDrift(td_z, td_t, well_z_dec, well_t_dec_post)       
+        ff = interp1d(np.insert(well_z_dec, 0, 0), np.insert(well_t_dec_post, 0, 0), kind = 'linear', bounds_error = False, fill_value = np.nan)                             
+        well_t_post = ff(well_z)
+
         
-        well_t_out = getTime(well_z_out, well_vp_out)
-        td_drift_t_out, td_drift_z_out, well_drift_t_out, well_drift_z_out = td_lib.getDrift(td_z_in, td_t_in, well_z_out, well_t_out)       
+        # median filtering of time curve
+        #well_t_post = ndimage.median_filter(well_t_post, size = 5)    
+            
+        # get output velocity from interpolated time
+        well_vp_post = getVel(well_z, well_t_post)
+        well_vp_diff = well_vp_post - well_vp
         
+    #     print(well_vp_diff[:10])
         
-        print('last drift:')
-        print('td_t last: ' + str(td_t[-1]))
-        print('drift last: ' + str(td_drift_t_dec_post[-1]))
-        
-        #plt.plot(getTime(well_z_in, well_vp_in), well_z_in, '-b')
-        plt.plot(td_drift_t_dec, td_z, '.b')
-        plt.plot(td_drift_t_dec_post, td_z, '.-r')
-        plt.plot(td_drift_t_out, td_z_in - zstart, '--g')
-        #plt.plot(getTime(well_z_dec, well_vp_dec_post), well_z_dec, '.-r')    
-        #plt.plot(getTime(well_z_out, well_vp_out), well_z_in, '-r')
-        #plt.plot(td_t_in, td_z_in, '.k')    
-        plt.grid()
-        plt.ylim(yr)    
-        plt.title('DRIFT')
-        plt.xlabel('ms')    
+        # final smoothing of velocity update
+        if 1:
+            #N = 50
+            #well_vp_diff = np.convolve(well_vp_diff, np.ones((N,))/N, mode='same')        
+            N = 25
+            well_vp_diff = mean_filter(well_vp_diff, N)
+            well_vp_post = well_vp + well_vp_diff
     
-    
-    return well_vp_out,well_z_out#,well_t_out
+    #     print(well_vp_diff[:10])
+                
+        ###########################
+        # REDATUM back to initial #
+        ###########################
+        
+            
+        # add start depth 
+        well_z_out = well_z_in
+        well_vp_out = np.insert(well_vp_post, 0, well_vp_top)            
+
+        #############
+        # QC Figure #    
+        #############   
+        
+        plotQC = 1
+        if plotQC:
+                
+            
+            fig = plt.figure(88)
+            fig.clf()        
+            nrow = 1
+            ncol = 4
+            
+            ax1 = plt.subplot(nrow, ncol ,1)
+            ax2 = plt.subplot(nrow, ncol, 2, sharey = ax1)
+            ax3 = plt.subplot(nrow, ncol, 3, sharey = ax1)
+            ax4 = plt.subplot(nrow, ncol, 4, sharey = ax1)    
+            
+            yr = (np.max(well_z_dec) * 1.05, 0)
+            plt.sca(ax1)  
+            #plt.plot(well_vp_in, well_z_in, '-g')
+            plt.plot(well_vp_dec, well_z_dec,'-b')    
+            plt.plot(well_vp_dec + 2 * well_vp_std_dec, well_z_dec,'--b')
+            plt.plot(well_vp_dec - 2 * well_vp_std_dec, well_z_dec,'--b')
+            plt.plot(well_vp_dec_post, well_z_dec,'-r')        
+            #plt.plot(well_vp, well_z, '-b')
+            #plt.plot(well_vp_post, well_z, '-r')
+            #plt.plot(well_vp_out, well_z_out, ':c')    
+            plt.grid()
+            plt.ylim(yr)
+            plt.title('Velocity')
+            plt.xlabel('m/s')
+            
+            
+            plt.sca(ax2)  
+            plt.plot(well_vp_diff, well_z, '-r')
+            plt.grid()
+            plt.ylim(yr)
+            plt.title('Velocity difference')
+            
+            plt.sca(ax3) 
+            #plt.plot(getTime(well_z_in, well_vp_in), well_z_in, '-b')
+            plt.plot(getTime(well_z_dec, well_vp_dec), well_z_dec, '-b')
+            plt.plot(getTime(well_z_dec, well_vp_dec_post), well_z_dec, '-r')    
+            #plt.plot(getTime(well_z_out, well_vp_out), well_z_in, '-r')
+            #plt.plot(td_t_in, td_z_in, '.k')
+            plt.plot(td_t, td_z, '.k')
+            for ii in np.arange(len(td_z)):
+                plt.plot(td_t[ii] + [- 2 * std_e[ii], 2 * std_e[ii]], td_z[ii] + [0, 0], '-k')
+                
+            plt.grid()
+            plt.ylim(yr)    
+            plt.title('TWT')
+            plt.xlabel('ms')
+            
+            
+            plt.sca(ax4)  
+            
+            well_t_dec = getTime(well_z_dec, well_vp_dec)    
+            td_drift_t_dec, td_drift_z_dec, well_drift_t_dec, well_drift_z_dec = td_lib.getDrift(td_z, td_t, well_z_dec, well_t_dec)       
+            
+            well_t_dec_post = getTime(well_z_dec, well_vp_dec_post)
+            td_drift_t_dec_post, td_drift_z_dec_post, well_drift_t_dec_post, well_drift_z_dec_post = td_lib.getDrift(td_z, td_t, well_z_dec, well_t_dec_post)       
+            
+            well_t_out = getTime(well_z_out, well_vp_out)
+            td_drift_t_out, td_drift_z_out, well_drift_t_out, well_drift_z_out = td_lib.getDrift(td_z_in, td_t_in, well_z_out, well_t_out)       
+            
+            
+            print('last drift:')
+            print('td_t last: ' + str(td_t[-1]))
+            print('drift last: ' + str(td_drift_t_dec_post[-1]))
+            
+            #plt.plot(getTime(well_z_in, well_vp_in), well_z_in, '-b')
+            plt.plot(td_drift_t_dec, td_z, '.b')
+            plt.plot(td_drift_t_dec_post, td_z, '.-r')
+            plt.plot(td_drift_t_out, td_z_in - zstart, '--g')
+            #plt.plot(getTime(well_z_dec, well_vp_dec_post), well_z_dec, '.-r')    
+            #plt.plot(getTime(well_z_out, well_vp_out), well_z_in, '-r')
+            #plt.plot(td_t_in, td_z_in, '.k')    
+            plt.grid()
+            plt.ylim(yr)    
+            plt.title('DRIFT')
+            plt.xlabel('ms')    
+        
+        
+        return well_vp_out,well_z_out#,well_t_out
     
     
     #%%%%%%%%%%%%%%%%%%%%%

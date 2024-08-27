@@ -13,8 +13,11 @@ import td_lib
 import os
 import matplotlib.pyplot as plt
 from pathlib import Path
-import bayes_csc
+
+
 from IPython import embed
+
+import bayes_csc
 import csv
 import sys
 import json
@@ -174,8 +177,9 @@ class Bayesian_Inference():
                 #if 1:
 
                     st.write(f'Calculating Bayesian time-depth correction for {uwi}... This might take some time.')
-                    well_vp, well_z = bayes_csc.runCsc(well_z, well_vp, td_z, td_t, par)
-                    
+                    class_bayes = bayes_csc.Run_Bayesian()   
+                    well_vp, well_z = class_bayes.runCsc(well_z, well_vp, td_z, td_t, par)
+                    embed()
                     print('...done')
                     # merge output with existing dataframe
                     #well_vp = well_vp
