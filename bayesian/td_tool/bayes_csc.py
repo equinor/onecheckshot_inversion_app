@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy import ndimage, misc
-import td_lib
+import bayesian.td_tool.td_lib
 import plotly.express as px
 import plotly.graph_objects as go
 from IPython import embed

@@ -1,7 +1,6 @@
 from pathlib import Path
-root_folder = str(Path(__file__).parents[1]/'bayesian'/'td_tool')
+
 import sys
-sys.path.append(root_folder)
 import streamlit as st
 import pandas as pd
 import math
@@ -15,7 +14,8 @@ import seaborn as sns
 import numpy as np
 import git
 
-from bayes_csc import getTime 
+from bayesian.td_tool.bayes_csc import getTime
+from bayesian.td_tool.td_lib import getVel
 
 
 @st.cache_data
@@ -80,6 +80,9 @@ if __name__ == '__main__':
         td_z = td['tvd_ss'].values
         td_t = td['twt picked'].values
         td_t = td_t*0.001
+        td_vp = getVel(td_z, td_t)
+        
+
     else:
         print('ERROR: empty time depth - skipping well')
         runWell = 0 # skip this well
@@ -149,6 +152,7 @@ if __name__ == '__main__':
     st.write("## Definition of uncertainties")
     
     df_checkshot_plot2 = df_checkshot.copy(deep=True)
+
     col3, col4 = st.columns(2)
     with col3:
         container1 = st.container()
@@ -178,7 +182,7 @@ if __name__ == '__main__':
             st.plotly_chart(fig1)
 
     df_sonic_plot2 = df_sonic.copy(deep=True)
-  
+    
     with col4:
         container2 = st.container()
         with container2:
@@ -191,6 +195,8 @@ if __name__ == '__main__':
             fig2.add_trace(go.Line(x=df_sonic_plot2['vp'],y=df_sonic_plot2['tvd_ss'],name="Sonic Log", marker_color='blue'))
             fig2.add_trace(go.Line(x=df_sonic_plot2['u+std'],y=df_sonic_plot2['tvd_ss'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
             fig2.add_trace(go.Line(x=df_sonic_plot2['u-std'],y=df_sonic_plot2['tvd_ss'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
+            
+            fig2.add_trace(go.Line(x=td_vp,y=td_z, line_color='red', name='Vp Checkshot'))
 
             # Filling the area between the upper and lower bounds
             
@@ -203,7 +209,7 @@ if __name__ == '__main__':
             autosize=False,
             width=900,
             height=1800,
-            yaxis_range=[max(df_sonic_plot2["tvd_ss"]), min(df_sonic_plot2["tvd_ss"])],
+            yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])],
             showlegend=True)
 
  
