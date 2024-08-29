@@ -19,6 +19,7 @@ from bayesian.td_tool.td_lib import getVel
 
 
 @st.cache_data
+
 def get_data():
     """Grab GDP data from a CSV file.
 

@@ -13,11 +13,12 @@ import td_lib
 import os
 import matplotlib.pyplot as plt
 from pathlib import Path
-
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 
 from IPython import embed
 
-import bayes_csc
+from bayes_csc import Run_Bayesian, getDefaultPar,bayes_well_plot, bayes_well_plotly
 import csv
 import sys
 import json
@@ -129,7 +130,7 @@ class Bayesian_Inference():
             else:
                 print('ERROR: empty well log data - skipping well')
                 runWell = 0 # skip this well
-                    
+                   
             # get water depth            
             if runWell:    
                 water_depth = df_checkshot.loc[df_checkshot['average velocity'] == 1478]['tvd_ss']    
@@ -140,7 +141,7 @@ class Bayesian_Inference():
                 #ii = (td_z > water_depth)
                 ##td_z = np.union1d([0, water_depth], td_z[ii])
                 #td_t = np.union1d([0, water_twt], td_t[ii])
-
+            
             # add top part of logs
             if extend2zero and runWell:
                 print('EXTEND logs to z = 0')
@@ -163,7 +164,7 @@ class Bayesian_Inference():
             if doBayes and runWell:
                 
                 # set parameters for bayesian check-shot correction
-                par = bayes_csc.getDefaultPar()        
+                par = getDefaultPar()        
                 par['apply_corr'] = 0
                 par['istep_bayes'] = 1
                 par['std_vp_mode'] = 2
@@ -177,9 +178,9 @@ class Bayesian_Inference():
                 #if 1:
 
                     st.write(f'Calculating Bayesian time-depth correction for {uwi}... This might take some time.')
-                    class_bayes = bayes_csc.Run_Bayesian()   
+                    
+                    class_bayes = Run_Bayesian()   
                     well_vp, well_z = class_bayes.runCsc(well_z, well_vp, td_z, td_t, par)
-                    embed()
                     print('...done')
                     # merge output with existing dataframe
                     #well_vp = well_vp
@@ -190,12 +191,12 @@ class Bayesian_Inference():
                     df_well = df_well.sort_values('TVDMSL').reset_index(drop = True)                
                     
                     # plot well                
-                    fig = bayes_csc.bayes_well_plot(df_well, td_z, td_t, ww, water_depth = water_depth, water_vel = water_velocity)
-                    
+                    fig = bayes_well_plot(df_well, td_z, td_t, ww, water_depth = water_depth, water_vel = water_velocity)
                     # save output data
                     bayes_csc_out = {'well_name': ww, 'td' : td, \
                                         'water_depth': water_depth, 'water_vel': water_velocity, \
                                         'df_well': df_well}
+                    
 
                 except Exception as e:
                     print(e.args)
@@ -206,5 +207,6 @@ class Bayesian_Inference():
             pass
         return bayes_csc_out, fig
 
-clas = Bayesian_Inference()
-x = clas.run(uwi='NO 16/2-1')
+#clas = Bayesian_Inference()
+#bayes_csc_out, fig = clas.run(uwi='NO 16/2-1')
+#print('finish')

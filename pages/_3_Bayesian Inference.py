@@ -16,8 +16,8 @@ from plotly.subplots import make_subplots
 import seaborn as sns
 import numpy as np
 import git
-from runBayesCsc_2 import Bayesian_Inference
-from bayes_csc import getTime
+from bayesian.td_tool.runBayesCsc_2 import Bayesian_Inference
+from bayesian.td_tool.bayes_csc import getTime
 
 from _2_Checkshot_Data import get_data, filter_data
 

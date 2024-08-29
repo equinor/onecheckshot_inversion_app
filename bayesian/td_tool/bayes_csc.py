@@ -11,9 +11,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy import ndimage, misc
 from IPython import embed
-
-embed()
-import td_tool.td_lib
+from td_lib import getVel, getDrift
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -94,13 +92,18 @@ def redatum(well_z, well_vp, td_z, td_t, zstart = 0):
     return well_z, well_vp, td_z, td_t, well_z_top, well_vp_top, td_z_top, td_t_top
     
 class Run_Bayesian():
-    def runCsc(well_z_in, well_vp_in, td_z_in, td_t_in, par):
-            
+    def test(self, well_z_in, well_vp_in, td_z_in, td_t_in, par):
+        run = self.runCsc(well_z_in, well_vp_in, td_z_in, td_t_in, par)
+        return run
+    def runCsc(self,well_z_in, well_vp_in, td_z_in, td_t_in, par):
+        #from bayesian.td_tool.td_lib import getVel, getDrift   
+        
+        #run_2 = self.test(self, well_z_in, well_vp_in, td_z_in, td_t_in, par)
         ##########################
         # REDATUM to start depth #
         # SPLIT at start depth   #
         ##########################
-        
+
         zstart = par['zstart']    
         well_z, well_vp, td_z, td_t, well_z_top, well_vp_top, td_z_top, td_t_top = redatum(well_z_in, well_vp_in, td_z_in, td_t_in, zstart)
 
@@ -117,8 +120,8 @@ class Run_Bayesian():
         ibayes[-1] = len(well_z)-1 # ensure that last sample is included
         well_z_dec = well_z[ibayes]
         well_t_dec = well_t[ibayes]
-        well_vp_dec = getVel(well_z_dec, well_t_dec)
         
+        well_vp_dec = getVel(well_z_dec, well_t_dec)
         ###############
         # PRIOR model #        
         ###############
@@ -231,92 +234,7 @@ class Run_Bayesian():
             
         # add start depth 
         well_z_out = well_z_in
-        well_vp_out = np.insert(well_vp_post, 0, well_vp_top)            
-
-        #############
-        # QC Figure #    
-        #############   
-        
-        plotQC = 1
-        if plotQC:
-                
-            
-            fig = plt.figure(88)
-            fig.clf()        
-            nrow = 1
-            ncol = 4
-            
-            ax1 = plt.subplot(nrow, ncol ,1)
-            ax2 = plt.subplot(nrow, ncol, 2, sharey = ax1)
-            ax3 = plt.subplot(nrow, ncol, 3, sharey = ax1)
-            ax4 = plt.subplot(nrow, ncol, 4, sharey = ax1)    
-            
-            yr = (np.max(well_z_dec) * 1.05, 0)
-            plt.sca(ax1)  
-            #plt.plot(well_vp_in, well_z_in, '-g')
-            plt.plot(well_vp_dec, well_z_dec,'-b')    
-            plt.plot(well_vp_dec + 2 * well_vp_std_dec, well_z_dec,'--b')
-            plt.plot(well_vp_dec - 2 * well_vp_std_dec, well_z_dec,'--b')
-            plt.plot(well_vp_dec_post, well_z_dec,'-r')        
-            #plt.plot(well_vp, well_z, '-b')
-            #plt.plot(well_vp_post, well_z, '-r')
-            #plt.plot(well_vp_out, well_z_out, ':c')    
-            plt.grid()
-            plt.ylim(yr)
-            plt.title('Velocity')
-            plt.xlabel('m/s')
-            
-            
-            plt.sca(ax2)  
-            plt.plot(well_vp_diff, well_z, '-r')
-            plt.grid()
-            plt.ylim(yr)
-            plt.title('Velocity difference')
-            
-            plt.sca(ax3) 
-            #plt.plot(getTime(well_z_in, well_vp_in), well_z_in, '-b')
-            plt.plot(getTime(well_z_dec, well_vp_dec), well_z_dec, '-b')
-            plt.plot(getTime(well_z_dec, well_vp_dec_post), well_z_dec, '-r')    
-            #plt.plot(getTime(well_z_out, well_vp_out), well_z_in, '-r')
-            #plt.plot(td_t_in, td_z_in, '.k')
-            plt.plot(td_t, td_z, '.k')
-            for ii in np.arange(len(td_z)):
-                plt.plot(td_t[ii] + [- 2 * std_e[ii], 2 * std_e[ii]], td_z[ii] + [0, 0], '-k')
-                
-            plt.grid()
-            plt.ylim(yr)    
-            plt.title('TWT')
-            plt.xlabel('ms')
-            
-            
-            plt.sca(ax4)  
-            
-            well_t_dec = getTime(well_z_dec, well_vp_dec)    
-            td_drift_t_dec, td_drift_z_dec, well_drift_t_dec, well_drift_z_dec = td_lib.getDrift(td_z, td_t, well_z_dec, well_t_dec)       
-            
-            well_t_dec_post = getTime(well_z_dec, well_vp_dec_post)
-            td_drift_t_dec_post, td_drift_z_dec_post, well_drift_t_dec_post, well_drift_z_dec_post = td_lib.getDrift(td_z, td_t, well_z_dec, well_t_dec_post)       
-            
-            well_t_out = getTime(well_z_out, well_vp_out)
-            td_drift_t_out, td_drift_z_out, well_drift_t_out, well_drift_z_out = td_lib.getDrift(td_z_in, td_t_in, well_z_out, well_t_out)       
-            
-            
-            print('last drift:')
-            print('td_t last: ' + str(td_t[-1]))
-            print('drift last: ' + str(td_drift_t_dec_post[-1]))
-            
-            #plt.plot(getTime(well_z_in, well_vp_in), well_z_in, '-b')
-            plt.plot(td_drift_t_dec, td_z, '.b')
-            plt.plot(td_drift_t_dec_post, td_z, '.-r')
-            plt.plot(td_drift_t_out, td_z_in - zstart, '--g')
-            #plt.plot(getTime(well_z_dec, well_vp_dec_post), well_z_dec, '.-r')    
-            #plt.plot(getTime(well_z_out, well_vp_out), well_z_in, '-r')
-            #plt.plot(td_t_in, td_z_in, '.k')    
-            plt.grid()
-            plt.ylim(yr)    
-            plt.title('DRIFT')
-            plt.xlabel('ms')    
-        
+        well_vp_out = np.insert(well_vp_post, 0, well_vp_top)
         
         return well_vp_out,well_z_out#,well_t_out
     
@@ -471,9 +389,9 @@ def getVel(zz, tt):
 
     dz = np.insert(dz, 0, zz[0])
     dt = np.insert(dt, 0, tt[0])
-    
+    dt = np.where(dt == 0, np.nan, dt)
     #ii = np.where(dtwt != 0)        
-    
+
     # get velocity
     vp = 2 * dz / dt
     
@@ -535,22 +453,47 @@ def PostGauss(G,d,Sigma_e,mu_m,Sigma_m):
     return mu_post, Sigma_post
 
 #def bayes_well_plot_old(well_z, well_vp_in, well_vp, td_z, td_t, well_s, water_depth = np.nan, water_vel = 1480):
+def bayes_well_plotly():
+    from plotly.subplots import make_subplots
+    import plotly.graph_objects as go
+
+    fig = make_subplots(rows=1, cols=2)
+
+    fig.add_trace(
+        go.Scatter(x=[1, 2, 3], y=[4, 5, 6]),
+        row=1, col=1
+    )
+
+    fig.add_trace(
+        go.Scatter(x=[20, 30, 40], y=[50, 60, 70]),
+        row=1, col=2
+    )
     
-def bayes_well_plot(df_well, td_z, td_t, well_s, water_depth = np.nan, water_vel = 1480):    
-    
+    return fig
+
+
+def bayes_well_plot(df_well, td_z, td_t, well_s, water_depth = np.nan, water_vel = 1480):
     # extract columns from dataframe
     well_z = df_well['TVDMSL'].values
     #well_vp_in = df_well['VP_IN'].values
     well_vp_ext = df_well['VP_EXT'].values
     well_vp = df_well['VP_BAYES'].values
+    
     # derive data
-    td_vp = td_lib.getVel(td_z, td_t)
+
+    td_vp = getVel(td_z, td_t)
+
+    td_df = pd.DataFrame({'depth':td_z,'twt':td_t,'vp':td_vp})
+    td_df = td_df.dropna()
+    td_z = td_df['depth'].values
+    td_t = td_df['twt'].values
+    td_vp = td_df['vp'].values
+
+
     well_t_ext = getTime(well_z, well_vp_ext)
     well_t = getTime(well_z, well_vp)
-    #well_t = td_lib.applyTimeShift(well_z, well_t, td_z, td_t)  
-    td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = td_lib.getDrift(td_z, td_t, well_z, well_t_ext)    
-    td_drift_t, td_drift_z, well_drift_t, well_drift_z = td_lib.getDrift(td_z, td_t, well_z, well_t)    
-    
+    td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = getDrift(td_z, td_t, well_z, well_t_ext)    
+    td_drift_t, td_drift_z, well_drift_t, well_drift_z = getDrift(td_z, td_t, well_z, well_t)    
 
     
     fig = plt.figure('Time-Depth QC-plot')
@@ -569,9 +512,7 @@ def bayes_well_plot(df_well, td_z, td_t, well_s, water_depth = np.nan, water_vel
     plt.plot([-1e4, 1e4], [water_depth, water_depth], '--k')
     plt.plot([water_vel, water_vel], [-1e4, 1e4], ':g')    
     plt.plot(well_vp_ext, well_z, '-g')
-    #plt.plot(well_vp, well_z, '-b')
     plt.step(td_vp, td_z, '-r', where = 'post')
-    #plt.step([2000, 2500, 1800, 3000], [500, 1000, 1500, 2000], '-k', where = 'post')    
     plt.grid()
     plt.xlabel('m/s')
     plt.ylabel('TVDMSL')
@@ -586,8 +527,6 @@ def bayes_well_plot(df_well, td_z, td_t, well_s, water_depth = np.nan, water_vel
     plt.plot([0, 0], [0, 1e4], '-k')    
     xx = well_vp - well_vp_ext
     plt.plot(xx, well_z, '-b')
-    #plt.step(td_vp, td_z, '-r', where = 'post')
-    #plt.step([2000, 2500, 1800, 3000], [500, 1000, 1500, 2000], '-k', where = 'post')    
     plt.grid()
     plt.xlabel('m/s')    
     plt.title('VELOCITY DIFFERENCE') 
@@ -617,11 +556,8 @@ def bayes_well_plot(df_well, td_z, td_t, well_s, water_depth = np.nan, water_vel
     plt.sca(ax4)
     plt.plot([-1e4, 1e4], [water_depth, water_depth], '--k')
     plt.plot([0, 0], [0, np.max(td_z)], '-k')     
-    #plt.plot(1e3 * well_drift_t_ext, well_z, '-g')
-    #plt.plot(1e3 * well_drift_t, well_z, '-b')    
     plt.plot(1e3 * td_drift_t_ext, td_z, '-g')
-    plt.plot(1e3 * td_drift_t, td_z, '-b')        
-    #plt.plot(1e3 * td_drift_t, td_z, '.r')            
+    plt.plot(1e3 * td_drift_t, td_z, '-b')                   
     plt.grid()        
     plt.xlabel('ms')
     
@@ -637,14 +573,10 @@ def bayes_well_plot(df_well, td_z, td_t, well_s, water_depth = np.nan, water_vel
     ax1.invert_yaxis()
     plt.plot([-1e4, 1e4], [water_depth, water_depth], '--k')
     plt.plot([water_vel, water_vel], [-1e4, 1e4], ':g')    
-    #plt.plot(well_vp_in, well_z, '-k')
     plt.plot(well_vp, well_z, '-b')
     plt.step(td_vp, td_z, '-r', where = 'post')
-    #plt.step(td_vp, td_z, '-r', where = 'post')
-    #plt.step([2000, 2500, 1800, 3000], [500, 1000, 1500, 2000], '-k', where = 'post')    
     plt.grid()
     plt.xlabel('m/s')
-    #plt.ylabel('TVDMSL, well: ' + well_s)
     plt.title('VELOCITY BAYESIAN')
     xmin = 1000
     xmax = np.min((np.max(np.union1d(well_vp, td_vp)) * 1.2, 6000))
