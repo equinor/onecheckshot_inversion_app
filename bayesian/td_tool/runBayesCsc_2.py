@@ -18,7 +18,7 @@ import plotly.graph_objects as go
 
 from IPython import embed
 
-from bayes_csc import Run_Bayesian, getDefaultPar,bayes_well_plot, bayes_well_plotly
+from bayes_csc import Run_Bayesian, getDefaultPar,bayes_well_plot
 import csv
 import sys
 import json
