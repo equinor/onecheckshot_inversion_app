@@ -453,24 +453,6 @@ def PostGauss(G,d,Sigma_e,mu_m,Sigma_m):
     return mu_post, Sigma_post
 
 #def bayes_well_plot_old(well_z, well_vp_in, well_vp, td_z, td_t, well_s, water_depth = np.nan, water_vel = 1480):
-def bayes_well_plotly():
-    from plotly.subplots import make_subplots
-    import plotly.graph_objects as go
-
-    fig = make_subplots(rows=1, cols=2)
-
-    fig.add_trace(
-        go.Scatter(x=[1, 2, 3], y=[4, 5, 6]),
-        row=1, col=1
-    )
-
-    fig.add_trace(
-        go.Scatter(x=[20, 30, 40], y=[50, 60, 70]),
-        row=1, col=2
-    )
-    
-    return fig
-
 
 def bayes_well_plot(df_well, td_z, td_t, well_s, water_depth = np.nan, water_vel = 1480):
     # extract columns from dataframe
