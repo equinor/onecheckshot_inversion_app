@@ -9,16 +9,16 @@ import time
 import numpy as np
 import pandas as pd
 import pickle
-import td_lib 
+import sys
 import os
+sys.path.append(os.getcwd())
+from bayesian.td_tool.td_lib import extendLogsToZero
 import matplotlib.pyplot as plt
 from pathlib import Path
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-
 from IPython import embed
-
-from bayes_csc import Run_Bayesian, getDefaultPar,bayes_well_plot
+from bayesian.td_tool.bayes_csc import Run_Bayesian, getDefaultPar,bayes_well_plot
 import csv
 import sys
 import json
@@ -84,6 +84,7 @@ class Bayesian_Inference():
         try:
 
 
+            
             # water depths
             print('Reading water depth file ... ')
             wd = dataframe
@@ -149,7 +150,7 @@ class Bayesian_Inference():
                 
                 
                 
-                well_z, well_vp = td_lib.extendLogsToZero(well_z, well_vp, water_depth, water_velocity)        
+                well_z, well_vp = extendLogsToZero(well_z, well_vp, water_depth, water_velocity)        
                 print('   #log: ' + str(len(well_z)))
                 print('...done')
                 
@@ -191,7 +192,8 @@ class Bayesian_Inference():
                     df_well = df_well.sort_values('TVDMSL').reset_index(drop = True)                
                     
                     # plot well                
-                    fig = bayes_well_plot(df_well, td_z, td_t, ww, water_depth = water_depth, water_vel = water_velocity)
+                    #
+                    #fig = bayes_well_plot(df_well, td_z, td_t, ww, water_depth = water_depth, water_vel = water_velocity)
                     # save output data
                     bayes_csc_out = {'well_name': ww, 'td' : td, \
                                         'water_depth': water_depth, 'water_vel': water_velocity, \
@@ -205,7 +207,7 @@ class Bayesian_Inference():
         except:
             print(f'Bayesian inference could not be applied for well')
             pass
-        return bayes_csc_out, fig
+        return df_well, td_z, td_t, ww, water_depth, water_velocity
 
 #clas = Bayesian_Inference()
 #bayes_csc_out, fig = clas.run(uwi='NO 16/2-1')

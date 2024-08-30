@@ -11,7 +11,10 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy import ndimage, misc
 from IPython import embed
-from td_lib import getVel, getDrift
+import sys
+import os
+sys.path.append(os.getcwd())
+from bayesian.td_tool.td_lib import getVel, getDrift
 import plotly.express as px
 import plotly.graph_objects as go
 
