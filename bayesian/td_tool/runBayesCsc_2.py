@@ -171,9 +171,9 @@ class Bayesian_Inference():
                 par['std_vp_mode'] = 2
                 par['std_vp_const'] = 500
                 par['std_t_const'] = 0.005
-                par['apply_corr'] = 1
-                par['corr_order'] = 1.8
-                par['corr_range'] = 100            
+                #par['apply_corr'] = 1
+                #par['corr_order'] = 1.8
+                #par['corr_range'] = 100            
                 par['zstart'] = well_z[1] # start at seabed 
                 try:
                 #if 1:
