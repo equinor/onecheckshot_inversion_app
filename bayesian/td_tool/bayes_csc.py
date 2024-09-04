@@ -13,6 +13,7 @@ from scipy import ndimage, misc
 from IPython import embed
 import sys
 import os
+import bayesian.td_tool.post_gauss.PostGauss as pg
 sys.path.append(os.getcwd())
 from bayesian.td_tool.td_lib import getVel, getDrift
 import plotly.express as px
@@ -95,9 +96,6 @@ def redatum(well_z, well_vp, td_z, td_t, zstart = 0):
     return well_z, well_vp, td_z, td_t, well_z_top, well_vp_top, td_z_top, td_t_top
     
 class Run_Bayesian():
-    def test(self, well_z_in, well_vp_in, td_z_in, td_t_in, par):
-        run = self.runCsc(well_z_in, well_vp_in, td_z_in, td_t_in, par)
-        return run
     def runCsc(self,well_z_in, well_vp_in, td_z_in, td_t_in, par):
         #from bayesian.td_tool.td_lib import getVel, getDrift   
         
@@ -106,13 +104,16 @@ class Run_Bayesian():
         # REDATUM to start depth #
         # SPLIT at start depth   #
         ##########################
-
+         
         zstart = par['zstart']    
         well_z, well_vp, td_z, td_t, well_z_top, well_vp_top, td_z_top, td_t_top = redatum(well_z_in, well_vp_in, td_z_in, td_t_in, zstart)
 
         # derive time
         well_t = getTime(well_z, well_vp)
-        
+        #import ctypes
+        #clibrary = ctypes.CDLL("clibrary.c")
+
+   
         ##################################################
         # DECIMATE input logs to speed up bayesian step # 
         ##################################################
@@ -125,6 +126,7 @@ class Run_Bayesian():
         well_t_dec = well_t[ibayes]
         
         well_vp_dec = getVel(well_z_dec, well_t_dec)
+
         ###############
         # PRIOR model #        
         ###############
@@ -157,11 +159,11 @@ class Run_Bayesian():
             C = np.eye(nc)
         # prior covariance matrix
         Sigma_m = np.outer(std_m, std_m.T) * C
-        
+ 
         ########
         # DATA #        
         ########
-        
+
         # data is check-shot times
         d = td_t
         
@@ -179,16 +181,33 @@ class Run_Bayesian():
     #     print(std_e[:10])
             
         # data covariance matrix
-        Sigma_e = np.diag(std_e * std_e)          
+        Sigma_e = np.diag(std_e * std_e)
+
         #################
         # BAYESIAN step #
         #################
         
         # get G matrix  
-        G = makeG(well_z_dec, td_z) 
+        G = makeG(well_z_dec, td_z)
+
         # get solution
-        mu_post,Sigma_post = PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
+        import time
         
+        
+        start_time_2 = time.time()
+        mu_post_cpp,Sigma_post_cpp = pg.PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
+        end_time_2 = time.time()
+        print("Execution time CPP:", end_time_2 - start_time_2, "seconds")
+        
+
+        start_time = time.time()
+        mu_post,Sigma_post = PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
+        end_time = time.time()
+        print("Execution time Py:", end_time - start_time, "seconds")
+
+
+
+        embed()
         # derive posterior data
         well_vp_dec_post = 1 / mu_post
             
@@ -227,7 +246,6 @@ class Run_Bayesian():
             N = 25
             well_vp_diff = mean_filter(well_vp_diff, N)
             well_vp_post = well_vp + well_vp_diff
-    
     #     print(well_vp_diff[:10])
                 
         ###########################
@@ -446,13 +464,17 @@ def PostGauss(G,d,Sigma_e,mu_m,Sigma_m):
     #   
     #Programmed by Arild Buland
     #Ported to python, Eirik Dischler, 2020
-    #from IPython import embed
-    Sigma_d = G.dot(Sigma_m).dot(G.T) + Sigma_e 
-    m = np.linalg.inv(Sigma_d).dot(d - G.dot(mu_m))
-    mu_post = mu_m + Sigma_m.dot(G.T).dot(m)
     
+    Sigma_d = G.dot(Sigma_m).dot(G.T) + Sigma_e
+
+    m = np.linalg.inv(Sigma_d).dot(d - G.dot(mu_m))
+
+    mu_post = mu_m + Sigma_m.dot(G.T).dot(m)
+
     N = np.linalg.inv(Sigma_d).dot(G.dot(Sigma_m))
+
     Sigma_post = Sigma_m - Sigma_m.dot(G.T).dot(N)
+
     return mu_post, Sigma_post
 
 #def bayes_well_plot_old(well_z, well_vp_in, well_vp, td_z, td_t, well_s, water_depth = np.nan, water_vel = 1480):

@@ -23,6 +23,7 @@ import csv
 import sys
 import json
 import streamlit as st
+import time
 
 class Bayesian_Inference():
     def __init__(self):
@@ -37,8 +38,9 @@ class Bayesian_Inference():
 
     def run(self, uwi):    
     #dataframe = pd.read_csv('td_tool/test_well_8.csv')
+
         dataframe_sonic_checkshot = self.get_data(uwi)
-        df_output = []
+
 
         #####################
         # START: PARAMETERS #
@@ -179,9 +181,14 @@ class Bayesian_Inference():
                 #if 1:
 
                     st.write(f'Calculating Bayesian time-depth correction for {uwi}... This might take some time.')
-                    
+
+                    dataframe_sonic_checkshot = self.get_data(uwi)
+
+
+
                     class_bayes = Run_Bayesian()   
                     well_vp, well_z = class_bayes.runCsc(well_z, well_vp, td_z, td_t, par)
+
                     print('...done')
                     # merge output with existing dataframe
                     #well_vp = well_vp
@@ -209,6 +216,6 @@ class Bayesian_Inference():
             pass
         return df_well, td_z, td_t, ww, water_depth, water_velocity
 
-#clas = Bayesian_Inference()
-#bayes_csc_out, fig = clas.run(uwi='NO 16/2-1')
-#print('finish')
+clas = Bayesian_Inference()
+df_well, td_z, td_t, ww, water_depth, water_velocity = clas.run(uwi='NO 34/7-22') #'NO 1/9-7 T3'
+print('finish')

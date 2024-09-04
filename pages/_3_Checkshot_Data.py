@@ -13,7 +13,8 @@ from plotly.subplots import make_subplots
 import seaborn as sns
 import numpy as np
 import git
-
+import os
+sys.path.append(os.getcwd())
 from bayesian.td_tool.bayes_csc import getTime
 from bayesian.td_tool.td_lib import getVel
 
