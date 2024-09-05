@@ -13,8 +13,9 @@ from scipy import ndimage, misc
 from IPython import embed
 import sys
 import os
-import bayesian.td_tool.post_gauss.PostGauss as pg
 sys.path.append(os.getcwd())
+import bayesian.td_tool.post_gauss.PostGauss as pg
+
 from bayesian.td_tool.td_lib import getVel, getDrift
 import plotly.express as px
 import plotly.graph_objects as go
@@ -191,23 +192,15 @@ class Run_Bayesian():
         G = makeG(well_z_dec, td_z)
 
         # get solution
-        import time
-        
-        
-        start_time_2 = time.time()
-        mu_post_cpp,Sigma_post_cpp = pg.PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
-        end_time_2 = time.time()
-        print("Execution time CPP:", end_time_2 - start_time_2, "seconds")
+
+        mu_post,Sigma_post = PostGauss(G, d, Sigma_e, mu_m, Sigma_m)    
         
 
-        start_time = time.time()
-        mu_post,Sigma_post = PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
-        end_time = time.time()
-        print("Execution time Py:", end_time - start_time, "seconds")
-
-
-
-        embed()
+        #start_time_2 = time.time()
+        #mu_post_cpp,Sigma_post_cpp = pg.PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
+        #end_time_2 = time.time()
+        #print("Execution time CPP:", end_time_2 - start_time_2, "seconds")
+        
         # derive posterior data
         well_vp_dec_post = 1 / mu_post
             
