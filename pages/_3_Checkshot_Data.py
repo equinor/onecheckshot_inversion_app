@@ -17,6 +17,45 @@ import os
 sys.path.append(os.getcwd())
 from bayesian.td_tool.bayes_csc import getTime
 from bayesian.td_tool.td_lib import getVel
+import pandas as pd
+import psycopg2
+import yaml
+
+class Connection_Database:
+  def __init__(self,host,dbname,user,password,sslmode):
+    conn_string = "host={0} user={1} dbname={2} password={3} sslmode={4}".format(host, user, dbname, password, sslmode)
+    self.conn = psycopg2.connect(conn_string)
+    self.conn.set_client_encoding('UTF8')
+    print("Connection established")
+
+  def connect_database(self,database, columns):
+    self.query = "SELECT {} from {}".format(columns, database)
+    self.df = pd.read_sql_query(self.query, self.conn)
+    return self.df
+
+  def close_connection(self):
+    self.conn.close()
+
+def chksht_welldb_smda():
+  
+  config_file = os.path.join(os.getcwd(),"bayesian","td_tool", "smda_password","config.yaml")
+  with open(config_file, "r") as file:
+    config = yaml.safe_load(file)
+  host = config['host']
+  dbname = config['dbname']
+  user = config['user']
+  password = config['password']
+  sslmode = config['sslmode']   
+  database_wellbore_checkshot = "smda.smda_workspace.wellbore_checkshot_data"
+  connect = Connection_Database(host,dbname,user,password,sslmode)
+  #columns_wellbore_checkshot = "id, unique_wellbore_identifier, source_file, tvd_ss, time, time_unit, tvd, tvd_unit, md, md_unit"
+  columns_wellbore_checkshot = "*"
+  df = connect.connect_database(database=database_wellbore_checkshot,columns=columns_wellbore_checkshot)
+  database_smda = "smda.smda_master.v_wellbore_time_depth_data"
+  columns_smda = "*"
+  df_smda = connect.connect_database(database=database_smda,columns=columns_smda)
+  connect.close_connection()
+  return df, df_smda
 
 
 @st.cache_data
@@ -32,6 +71,10 @@ def get_data():
     # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
     DATA_FILENAME = Path(__file__).parents[1]/'data/checkshot_sonic_table.csv'
     raw_cks_df = pd.read_csv(DATA_FILENAME, index_col=False)
+    df, df_smda = chksht_welldb_smda()
+    #df.rename(columns={'unique_wellbore_identifier': 'uwi', 'time': 'twt picked', 'average_velocity': 'average velocity', 'interval_velocity': 'interval velocity'}, inplace=True)
+    #df_checkshot = df[['uwi','tvd_ss','tvd_unit','twt picked','time_unit', 'average velocity', 'interval velocity','source_file']].dropna(subset='twt picked')
+
     df_checkshot = raw_cks_df[['uwi','tvd_ss','twt picked', 'average velocity', 'interval velocity']].dropna(subset='twt picked')
     df_sonic = raw_cks_df[['uwi','tvd_ss','vp', ]].dropna(subset='vp')
     df_sonic['vp'] = df_sonic['vp'].fillna(False)
@@ -230,7 +273,7 @@ if __name__ == '__main__':
 
 
 
-
+get_data()
     ###
     #first_year = gdp_df[gdp_df['Year'] == from_year]
     #last_year = gdp_df[gdp_df['Year'] == to_year]
