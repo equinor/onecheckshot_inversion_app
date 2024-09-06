@@ -14,7 +14,7 @@ from IPython import embed
 import sys
 import os
 sys.path.append(os.getcwd())
-import bayesian.td_tool.post_gauss.PostGauss as pg
+#import bayesian.td_tool.post_gauss.PostGauss as pg
 
 from bayesian.td_tool.td_lib import getVel, getDrift
 import plotly.express as px

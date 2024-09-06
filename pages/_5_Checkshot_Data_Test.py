@@ -17,12 +17,19 @@ import os
 sys.path.append(os.getcwd())
 from bayesian.td_tool.bayes_csc import getTime
 from bayesian.td_tool.td_lib import getVel
+from bayesian.td_tool.connect_smda import chksht_welldb_smda, get_wells
 import pandas as pd
 
 
+def select_well(list_wells):
+    selected_value = st.selectbox(f"Select Well", options=list_wells)
+    return selected_value
+
+list_wells = get_wells()
+uwi = select_well(list_wells)
 
 @st.cache_data
-def get_data():
+def get_data(uwi):
     """Grab GDP data from a CSV file.
 
     This uses caching to avoid having to read the file every time. If we were
@@ -33,23 +40,25 @@ def get_data():
     # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
     DATA_FILENAME = Path(__file__).parents[1]/'data/checkshot_sonic_table.csv'
     raw_cks_df = pd.read_csv(DATA_FILENAME, index_col=False)
-    #df.rename(columns={'unique_wellbore_identifier': 'uwi', 'time': 'twt picked', 'average_velocity': 'average velocity', 'interval_velocity': 'interval velocity'}, inplace=True)
-    #df_checkshot = df[['uwi','tvd_ss','tvd_unit','twt picked','time_unit', 'average velocity', 'interval velocity','source_file']].dropna(subset='twt picked')
+    #uwi = 'NO 6507/4-2 S'
+    df = chksht_welldb_smda(uwi)
 
-    df_checkshot = raw_cks_df[['uwi','tvd_ss','twt picked', 'average velocity', 'interval velocity']].dropna(subset='twt picked')
+    df.rename(columns={'unique_wellbore_identifier': 'uwi', 'time': 'twt picked', 'average_velocity': 'average velocity', 'interval_velocity': 'interval velocity'}, inplace=True)
+    df_checkshot = df[['uwi','tvd_ss','tvd_unit','twt picked','time_unit', 'average velocity', 'interval velocity','source_file']].dropna(subset='twt picked')
+
+    #df_checkshot = raw_cks_df[['uwi','tvd_ss','twt picked', 'average velocity', 'interval velocity']].dropna(subset='twt picked')
     df_sonic = raw_cks_df[['uwi','tvd_ss','vp', ]].dropna(subset='vp')
     df_sonic['vp'] = df_sonic['vp'].fillna(False)
 
     return raw_cks_df, df_checkshot, df_sonic #gdp_df
 
-raw_cks_df, df_checkshot, df_sonic = get_data()
+raw_cks_df, df_checkshot, df_sonic = get_data(uwi)
 
-def filter_data(df_checkshot, df_sonic, raw_cks_df, uwi):
-    df_checkshot = df_checkshot[df_checkshot['uwi'] == uwi]
+def filter_data(df_sonic, raw_cks_df, uwi):
+    #df_checkshot = df_checkshot[df_checkshot['uwi'] == uwi]
     df_sonic = df_sonic[df_sonic['uwi'] == uwi]
     df_merged = raw_cks_df[raw_cks_df['uwi'] == uwi]
-    return df_checkshot, df_sonic, raw_cks_df
-
+    return df_sonic, raw_cks_df
 
 
 # -----------------------------------------------------------------------------
@@ -65,16 +74,14 @@ SMDA Platform for Time-Depth relationship data extraction. (https://opus.smda.eq
 # Add some spacing
 ''
 
-wells = raw_cks_df.uwi.unique()
+#wells = raw_cks_df.uwi.unique()
 st.write("## Data Visualization")
-def select_well():
-    selected_value = st.selectbox(f"Select Well", options=wells)
-    return selected_value
 
-uwi = select_well()
+#uwi = select_well()
 
-df_checkshot, df_sonic, df_merged = filter_data(df_checkshot, df_sonic, raw_cks_df, uwi)
-td = df_checkshot
+df_sonic, df_merged = filter_data(df_sonic, raw_cks_df, uwi)
+td = df_checkshot.copy()
+
 def return_well():
     return uwi
 
@@ -98,9 +105,14 @@ if __name__ == '__main__':
     print('... done.')
 
     # get log data
-    well_z = df_sonic['tvd_ss'].values
-    well_vp = df_sonic['vp'].values
-    well_t = getTime(well_z, well_vp)
+    if not df_sonic.empty:
+        well_z = df_sonic['tvd_ss'].values
+        well_vp = df_sonic['vp'].values
+        well_t = getTime(well_z, well_vp)
+    else:
+        # Handle empty DataFrame case (e.g., display a message or return a default value)
+        print("df_sonic is empty.")
+        well_t = None  # Or return a default valu
 
     col1, col2 = st.columns(2)
     with col1:
