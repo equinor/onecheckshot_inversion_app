@@ -37,7 +37,7 @@ class Connection_Database:
     self.conn.close()
 
 def chksht_welldb_smda():
-  config_file = os.path.join(os.getcwd(),"bayesian","td_tool", "smda_password","config.yaml")
+  config_file = os.path.join(os.getcwd(),"smda_password","config.yaml")
   with open(config_file, "r") as file:
     config = yaml.safe_load(file)
   host = config['host']

@@ -162,5 +162,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 #security
-/bayesian/td_tool/smda_password/config.yaml
 /data/checkshot_sonic_table.csv
+smda_password/
