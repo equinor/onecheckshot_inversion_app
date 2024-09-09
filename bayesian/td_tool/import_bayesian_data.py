@@ -4,77 +4,78 @@ from IPython import embed
 import pandas as pd
 import psycopg2
 import pandas as pd
+import sys
+import yaml
 
-root_folder = 'demo_example/'
-pkl_output_folder = root_folder + 'output/bayes_csc/pkl/'
-files_in_folder = os.listdir(pkl_output_folder)
+from sqlalchemy import create_engine
+import mysql.connector
+sys.path.append(os.getcwd())
+config_file = os.path.join(os.getcwd(),"smda_password","config.yaml")
 
-files = list()
-for output_pkl_file in files_in_folder:
-    with open(pkl_output_folder + output_pkl_file, 'rb') as file:
-        data = pickle.load(file)
-        df_well = data['df_well']
-        df_well['well'] = data['well_name']
-        df_well['water_depth'] = data['water_depth']
-        files.append(df_well)
+checkshot_qc_filepath = os.path.join(os.getcwd(),"data","df_checkshot_qc.csv")
+checkshot_qc = pd.read_csv(checkshot_qc_filepath)
+checkshot_qc = checkshot_qc[["tvd_ss","twt picked", "md", "uwi", "source_tag"]]
+checkshot_qc.rename(columns={'twt picked': 'twt'}, inplace=True)
 
-output_bayesian = pd.concat(files, ignore_index=True)
-
-
+def get_wells():
+  with open(config_file, "r") as file:
+    config = yaml.safe_load(file)
+  return config
 
 class Connection_Database:
     def __init__(self, host, dbname, user, password, sslmode):
         conn_string = "host={0} user={1} dbname={2} password={3} sslmode={4}".format(host, user, dbname, password, sslmode)
-
-        self.conn = psycopg2.connect(conn_string)
-
-        self.conn.set_client_encoding('UTF8')
+        
+        
+        self.engine = create_engine(f'postgresql+psycopg2://{user}:{password}@{host}/{dbname}')
+        self.conn = self.engine.raw_connection()
+        self.cur = self.conn.cursor()
         print("Connection established")
 
     def connect_database(self, database, columns):
-        self.query = "SELECT {} from {}".format(columns, database)
+        self.query = f"SELECT {columns} from {database}"
         self.df = pd.read_sql_query(self.query, self.conn)
         return self.df
 
     def write_dataframe_to_database(self, df, table_name):
-        cur = self.conn.cursor()
-        create_table_sql = f"""
-        CREATE TABLE IF NOT EXISTS smda_workspace.{table_name} (
-            md double precision,
-            tvd double precision,
-            tvd_ss double precision,
-            time double precision not null
-            )"""
-        cur.execute(create_table_sql)
- 
-        df.to_sql(table_name, self.conn, if_exists='replace', index=False)
-        self.conn.commit()
         
-        print("Data written to database")
+        self.cur.execute(f"""INSERT INTO {table_name} (tvd_ss, twt, md, uwi, source_tag) VALUES
+                         (1, 2, 30, 2, 2),
+                         (2, 2, 30, 2, 3),
+                         (3, 2, 30, 2, 3),
+                         (4, 2, 30, 2, 4),
+                         (5, 2, 30, 2, 4) """)
+        
+
+        try:
+            df.to_sql("table", self.engine,if_exists= 'replace')
+            self.conn.commit()    
+        except Exception as e:
+            print(f"Error writing data to database: {e}")
 
     def close_connection(self):
+        
         self.conn.close()
+        print("Connection closed")
 
 # Create an instance of the class
 
-host = "s173-smda-psql-dev.postgres.database.azure.com"
-dbname = "smda"
-user = "db_admin"
-password = "dw5xllbpc3p6v6yd02u6e1eqmzqstnsan"
-sslmode = "require"
+config = get_wells()
+host = config['host']
+dbname = config['dbname']
+user = config['user']
+password = config['password']
+sslmode = config['sslmode']
+
+database_wellbore_checkshot = "smda.smda_workspace.table"
+
 db_connection = Connection_Database(host,dbname,user,password,sslmode)
 
 
-# Create a DataFrame
-data = {'column1': [1, 2, 3], 'column2': ['a', 'b', 'c']}
-df = pd.DataFrame(data)
-
 # Write the DataFrame to the database
-database_wellbore_checkshot = "table"
+#database_wellbore_checkshot = "table"
 
-write = db_connection.write_dataframe_to_database(df=df, table_name = database_wellbore_checkshot)
-
-
+write = db_connection.write_dataframe_to_database(df=checkshot_qc, table_name = database_wellbore_checkshot)
 
 # Close the connection
 db_connection.close_connection()

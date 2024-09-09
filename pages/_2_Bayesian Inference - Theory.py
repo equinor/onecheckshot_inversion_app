@@ -27,8 +27,14 @@ To overcome these limitations, more advanced calibration techniques can be emplo
 """)
 col1, col2 = st.columns(2)
 with col1:
-    st.write("## Bayesian Inference method") 
-    st.write("Bayesian inference can be a method to apply drift on the sonic log using checkshot data. A probabilistic approach to sonic log drift correction offers several advantages in the oil and gas industry. By quantifying uncertainty, incorporating prior knowledge, handling complex geological scenarios, and being robust to outliers, these methods provide more reliable and informative results. ")
+    st.write("## Bayesian Inversion method") 
+    st.write("""Bayesian inversion can be a method to apply drift on the sonic log using checkshot data. It provides a framework for combining prior knowledge (e.g., about the sonic log and checkshot uncertainties) with new data (the checkshot measurements) to estimate the posterior probability distribution of the sonic log's depth scale. This allows for a quantitative assessment of the uncertainty associated with the adjusted time-depth relationship curve.
+
+In this case, Both the the sonic log and chekshot data can be modeled as uncertain data, but the uncertainty on sonic log in higher. Sonic logs are typically more susceptible to noise and interference compared to checkshot data, which is often considered more reliable for depth calibration. By doing so, the sonic log curve can be shifted towards the checkshot data points, and an uncertainty can be estimated using bayesian inference.             
+
+In the context of applying shift from sonic log data using checkshot data, the forward model is a simple linear relationship that assumes the checkshot data is equal to the sonic log data plus a constant shift.
+""")
+    
     st.write("""
 ## Generation of time-depth relationship
 
@@ -47,7 +53,7 @@ with col2:
     st.write("""
 ## Advantages
              
-Bayesian inference offers a robust and flexible framework for shifting sonic data using checkshot data. It allows for the quantification of uncertainty in the estimated shift, 
+Bayesian inversion offers a robust and flexible framework for shifting sonic data using checkshot data. It allows for the quantification of uncertainty in the estimated shift, 
              incorporates prior knowledge, and can handle hierarchical structures in the data. Additionally, Bayesian methods are less sensitive to outliers, 
              providing more reliable results. The posterior distributions obtained can offer insights into the relationship between sonic and checkshot data, aiding in 
              interpretation. Finally, Bayesian inference can handle large datasets and complex models, making it a scalable and powerful approach for sonic data shift applications.
