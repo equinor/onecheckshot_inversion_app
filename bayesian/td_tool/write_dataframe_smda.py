@@ -70,15 +70,3 @@ write = db_connection.write_dataframe_to_database(df=checkshot_qc, table_name = 
 
 # Close the connection
 db_connection.close_connection()
-
-"""
-
-columns_wellbore_checkshot = "id, unique_wellbore_identifier, tvd_ss, time, time_unit, tvd, tvd_unit, md, md_unit"
-df = connect.connect_database(database=database_wellbore_checkshot,columns=columns_wellbore_checkshot)
-database_smda = "smda.smda_master.v_wellbore_time_depth_data"
-columns_smda = "*"
-df_smda = connect.connect_database(database=database_smda,columns=columns_smda)
-connect.close_connection()
-
-df = convert_and_clean_units(df)
-"""
