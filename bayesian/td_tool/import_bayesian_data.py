@@ -6,7 +6,8 @@ import psycopg2
 import pandas as pd
 import sys
 import yaml
-
+import numpy as np
+import json
 from sqlalchemy import create_engine
 import mysql.connector
 sys.path.append(os.getcwd())
@@ -39,27 +40,19 @@ class Connection_Database:
 
     def write_dataframe_to_database(self, df, table_name):
         
-        self.cur.execute(f"""INSERT INTO {table_name} (tvd_ss, twt, md, uwi, source_tag) VALUES
-                         (1, 2, 30, 2, 2),
-                         (2, 2, 30, 2, 3),
-                         (3, 2, 30, 2, 3),
-                         (4, 2, 30, 2, 4),
-                         (5, 2, 30, 2, 4) """)
+        self.cur.execute(f"""TRUNCATE {table_name}""")
+
+        lists = list(df.itertuples(index=False, name=None))
+        self.cur.executemany(f"""INSERT INTO {table_name} {str(tuple(checkshot_qc.columns)).replace("'","")} VALUES (%s, %s, %s, %s, %s)""", lists)
+        self.conn.commit() 
+        print("Values commited in Database")
         
-
-        try:
-            df.to_sql("table", self.engine,if_exists= 'replace')
-            self.conn.commit()    
-        except Exception as e:
-            print(f"Error writing data to database: {e}")
-
     def close_connection(self):
-        
+        self.cur.close()
         self.conn.close()
         print("Connection closed")
 
-# Create an instance of the class
-
+# Define parameters for database connection
 config = get_wells()
 host = config['host']
 dbname = config['dbname']
@@ -67,14 +60,12 @@ user = config['user']
 password = config['password']
 sslmode = config['sslmode']
 
-database_wellbore_checkshot = "smda.smda_workspace.table"
-
+#Connect Database
 db_connection = Connection_Database(host,dbname,user,password,sslmode)
 
 
 # Write the DataFrame to the database
-#database_wellbore_checkshot = "table"
-
+database_wellbore_checkshot = "smda.smda_workspace.table"
 write = db_connection.write_dataframe_to_database(df=checkshot_qc, table_name = database_wellbore_checkshot)
 
 # Close the connection
