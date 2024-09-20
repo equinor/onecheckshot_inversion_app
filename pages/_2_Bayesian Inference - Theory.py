@@ -17,7 +17,7 @@ st.set_page_config(
 # Declare some useful functions.
 st.write("# Sonic log calibration using checkshot data")
 st.write("## Introduction")
-st.write("""Checkshot data is used to calibrate sonic log data, which is essential for accurate depth conversion. By comparing the travel times recorded by the checkshot with those measured by the sonic log, geophysicists can determine the depth shift needed to align the sonic log data with the actual depth. The output of this calibration is a time-depth relationship (TDR) that will be essential to accuretly tie the wellbore data in the time domain. This tie ensures that depth-related properties measured by the sonic log, such as porosity and lithology, are accurately correlated with the true depth in the borehole.
+st.write("""Checkshot data is used to calibrate sonic log data, which is essential for accurate depth conversion. By comparing the travel times recorded by the checkshot with those measured by the sonic log, geophysicists can determine the depth shift needed to align the sonic log data with the actual depth. The output of this calibration is a time-depth relationship (TDR) that will be essential to accurately tie the wellbore data in the time domain. This tie ensures that depth-related properties measured by the sonic log, such as porosity and lithology, are accurately correlated with the true depth in the borehole.
              
 The traditional method for sonic log calibration involves a uniform drift correction applied to the entire log. To begin, sonic log data is plotted against checkshot data, allowing for a visual comparison. The difference between these two datasets at each depth is calculated to quantify the drift. This calculated drift is then applied to the sonic log data, either by adding or subtracting it from the readings. This adjustment aims to correct the sonic log for any deviations from the true formation velocity.
 
@@ -28,11 +28,11 @@ To overcome these limitations, more advanced calibration techniques can be emplo
 col1, col2 = st.columns(2)
 with col1:
     st.write("## Bayesian Inversion method") 
-    st.write("""Bayesian inversion can be a method to apply drift on the sonic log using checkshot data. It provides a framework for combining prior knowledge (e.g., about the sonic log and checkshot uncertainties) with new data (the checkshot measurements) to estimate the posterior probability distribution of the sonic log's depth scale. This allows for a quantitative assessment of the uncertainty associated with the adjusted time-depth relationship curve.
+    st.write("""Bayesian inversion can be a method to apply drift on the sonic log using checkshot data. It provides a framework for combining an attributed prior knowledge (e.g., about the sonic log and checkshot uncertainties) with new data (the checkshot measurements) to estimate the posterior probability distribution of the sonic log's depth scale. This allows for a quantitative assessment of the uncertainty associated with the adjusted time-depth relationship curve.
 
-In this case, Both the the sonic log and chekshot data can be modeled as uncertain data, but the uncertainty on sonic log in higher. Sonic logs are typically more susceptible to noise and interference compared to checkshot data, which is often considered more reliable for depth calibration. By doing so, the sonic log curve can be shifted towards the checkshot data points, and an uncertainty can be estimated using bayesian inference.             
+In this case, both the the sonic log and checkshot data can be modeled as uncertain data, but the uncertainty on sonic log is higher. Sonic logs are typically more susceptible to noise and interference compared to checkshot data, which is often considered more reliable for depth calibration. By doing so, the sonic log curve can be shifted towards the checkshot data points, and an uncertainty can be estimated using bayesian inference.             
 
-In the context of applying shift from sonic log data using checkshot data, the forward model is a simple linear relationship that assumes the checkshot data is equal to the sonic log data plus a constant shift.
+In the context of applying shift to sonic log data using checkshot data, the forward model is a simple linear relationship that assumes the checkshot data is equal to the sonic log data plus a constant shift.
 """)
     
     st.write("""
@@ -40,11 +40,11 @@ In the context of applying shift from sonic log data using checkshot data, the f
 
 Combination of velocity logs with checkshots to provide high-resolution, full coverage and imply the corrected seismic time. The aim of this method is to perform Bayesian inference and to estimate posterior distribution of a model (time-depth relationship) given the data (checkshot data) and a prior distribution (sonic log data).""")
     st.image('images/bayesian_formula.png', width=400, use_column_width=False)
-    st.write("""P(shift | data) is the posterior distribution of the shift parameter given the data.
+    st.write("""P(ϴ | data) is the posterior distribution of the shift (ϴ) parameter given the data.
              
-P(data | shift) is the likelihood function, representing the probability of observing the data given a specific shift.
+P(data | ϴ) is the likelihood function, representing the probability of observing the data given a specific shift.
              
-P(shift) is the prior distribution of the shift parameter.
+P(ϴ) is the prior distribution of the shift parameter.
              
 P(data) is the marginal likelihood, which acts as a normalization constant.""")
 
