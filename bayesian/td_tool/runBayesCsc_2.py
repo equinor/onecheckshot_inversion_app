@@ -152,7 +152,7 @@ class Bayesian_Inference():
                 
                 
                 
-                well_z, well_vp = extendLogsToZero(well_z, well_vp, water_depth, water_velocity)        
+                well_z, well_vp = extendLogsToZero(well_z, well_vp, water_depth, water_velocity)       
                 print('   #log: ' + str(len(well_z)))
                 print('...done')
                 

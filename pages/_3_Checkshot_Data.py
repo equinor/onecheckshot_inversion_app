@@ -67,6 +67,7 @@ SMDA Platform for Time-Depth relationship data extraction. (https://opus.smda.eq
 
 wells = raw_cks_df.uwi.unique()
 st.write("## Data Visualization")
+st.write(st.session_state['Sonic_log'])
 def select_well():
     selected_value = st.selectbox(f"Select Well", options=wells)
     return selected_value

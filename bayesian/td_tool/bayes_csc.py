@@ -87,7 +87,6 @@ def redatum(well_z, well_vp, td_z, td_t, zstart = 0):
 #    # insert exact start depth in well data
 #    well_z = np.insert(well_z, 0, zstart)
 #    well_vp = np.insert(well_vp, 0, well_vp[0])
-    
     # perform redatuming
     well_z = well_z - zstart    
     td_z = td_z - zstart
@@ -105,7 +104,7 @@ class Run_Bayesian():
         # REDATUM to start depth #
         # SPLIT at start depth   #
         ##########################
-         
+
         zstart = par['zstart']    
         well_z, well_vp, td_z, td_t, well_z_top, well_vp_top, td_z_top, td_t_top = redatum(well_z_in, well_vp_in, td_z_in, td_t_in, zstart)
 
