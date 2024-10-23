@@ -44,7 +44,8 @@ host, dbname, user, password, sslmode = get_connect_database()
 columns = 'md, tvd, tvd_ss, depth_reference_elevation, depth_source, time, source_file, unique_wellbore_identifier, average_velocity, interval_velocity, qc_description, md_increasing, tvd_ss_increasing, time_increasing, average_velocity_qc, trajectory_checked, mae_soniclog_checkshot, comparison_sonic_log_qc, preference_checkshotfile'
 df = generate_df(host, dbname, user, password, sslmode, columns, database_checkshot, uwi)
 
-
+df.loc[df['depth_source']=='seabed from smda','average_velocity'] = 1478.2
+df.loc[df['depth_source']=='seabed from smda','interval_velocity'] = 1478.2
 
 col1, col2 = st.columns(2)
 with col1:
@@ -53,7 +54,7 @@ with col1:
 
     df = df[(df['source_file'] == selected_source) & (df['md_increasing'] == 'true')]
     df.sort_values(by=['md'], ascending=[True], inplace=True)
-    st.write(df[['md', 'tvd', 'tvd_ss','depth_reference_elevation', 'time', 'average_velocity', 'average_velocity_qc', 'interval_velocity', 'mae_soniclog_checkshot','qc_description']])
+    st.write(df[['md', 'tvd', 'tvd_ss','depth_source','depth_reference_elevation', 'time', 'average_velocity', 'average_velocity_qc', 'interval_velocity', 'mae_soniclog_checkshot','qc_description']])
 
 with col2:
 
@@ -95,8 +96,9 @@ with col2:
         #df_filtered['interval_velocity_sonic'] = 0.3048/(float(df_filtered['LFP_DT'])*0.000001)
         df_filtered['interval_velocity_sonic'] = [0.3048/(float(sonic)*0.000001) if sonic != 0 else 0 for sonic in df_filtered['LFP_DT']]
         df_filtered['source'] = 'LFP'
-        
-        
+        df_filtered = df_filtered.rename(columns={'TVDMSL':'tvd_ss'})
+
+
     except:
         df_filtered = pd.DataFrame()
         df_filtered['source'] = np.NaN
@@ -107,9 +109,9 @@ with col2:
 
 
 df_sonic = df_filtered
-print(df_sonic.columns)
-td = df[['md','tvd','tvd_ss', 'depth_reference_elevation', 'time', 'qc_description', 'average_velocity', 'interval_velocity', 'md_increasing', 'tvd_ss_increasing', 'time_increasing', 'average_velocity_qc', 'trajectory_checked']]
-print(df_sonic)
+
+td = df[['md','tvd','tvd_ss', 'depth_reference_elevation', 'time', 'qc_description', 'average_velocity', 'interval_velocity', 'md_increasing', 'tvd_ss_increasing', 'time_increasing', 'average_velocity_qc', 'trajectory_checked', 'depth_source']]
+
 
 
 
@@ -134,7 +136,7 @@ with col1:
     with col1_1:
         #st.write("Plot Checkshot data. It was performed a quality control for this data following https://github.com/equinor/qc_and_clean_cks.")
         fig1_1 = go.Figure()
-        fig1_1.add_trace(go.Scatter(y=td["tvd_ss"],x=td["time"],mode="markers",marker=dict(color='blue',size=10),name='Checkshot data'))
+        fig1_1.add_trace(go.Scatter(y=td["tvd_ss"],x=td["time"],mode="markers",marker=dict(color='red',size=10),name='Checkshot data'))
 
         fig1_1.update_layout(
         title=f'Checkshot data : Well {uwi}',
@@ -146,6 +148,7 @@ with col1:
         yaxis_range=[max(td["tvd_ss"]), min(td["tvd_ss"])],
         )
         st.plotly_chart(fig1_1)
+
     with col1_2:
         fig1_2 = go.Figure()
         qc = ['md_increasing', 'tvd_ss_increasing', 'time_increasing', 'average_velocity_qc', 'trajectory_checked']
@@ -174,8 +177,8 @@ with col1:
         st.plotly_chart(fig1_2)
 with col2:
     try:
-        fig2 = px.line(df_sonic, x="interval_velocity_sonic", y="TVDMSL")  # Replace "x_column" and "y_column" with the appropriate column names from df_2   
-        fig2.update_traces(connectgaps=True) 
+        fig2 = px.line(df_sonic, x="interval_velocity_sonic", y="tvd_ss")  # Replace "x_column" and "y_column" with the appropriate column names from df_2   
+        fig2.update_traces(connectgaps=False) 
         fig2.update_layout(
         title=f'Sonic Log data : Well {uwi}',
         xaxis_title="Vp (m/s)",
@@ -191,11 +194,20 @@ with col2:
 
     df_checkshot_plot2 = td.copy(deep=True)
 
+#continue from here
+#time_sonic = getTime(df_sonic['tvd_ss'], df_sonic['interval_velocity_sonic'])
+
+#st.write([type(x) for x in np.array(df_sonic['tvd_ss']).astype(float)])
+#st.write([type(x) for x in df_sonic['interval_velocity_sonic']])
+
+
+#embed()
 col3, col4 = st.columns(2)
 with col3:
     container1 = st.container()
     with container1:
         # Create your plot here
+        st.write('## Time Domain')
         fig1 = go.Figure()
         std_checkshot = st.slider("Standard deviation: TWT", 0.005, 0.05)
         df_checkshot_plot2['std_checkshot'] = std_checkshot
@@ -204,12 +216,18 @@ with col3:
         df_checkshot_plot2['u+std'] = df_checkshot_plot2["time"] + df_checkshot_plot2['std_checkshot']
         df_checkshot_plot2['u-std'] = df_checkshot_plot2["time"] - df_checkshot_plot2['std_checkshot']           
         fig1 = go.Figure()
-        fig1.add_trace(go.Line(x=df_checkshot_plot2["time"],y=df_checkshot_plot2['tvd_ss'],name="Sonic Log", marker_color='blue'))
-        fig1.add_trace(go.Line(x=df_checkshot_plot2['u+std'],y=df_checkshot_plot2['tvd_ss'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
-        fig1.add_trace(go.Line(x=df_checkshot_plot2['u-std'],y=df_checkshot_plot2['tvd_ss'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
+        #fig1.add_trace(go.Line(x=df_checkshot_plot2["time"],y=df_checkshot_plot2['tvd_ss'],name="Checkshot", marker_color='red'))
+        fig1.add_trace(go.Scatter(y=td["tvd_ss"],x=td["time"],mode="markers",marker=dict(color='red',size=10),name='Checkshot data'))
+        #fig1.add_trace(go.Line(x=df_checkshot_plot2['u+std'],y=df_checkshot_plot2['tvd_ss'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
+        #fig1.add_trace(go.Line(x=df_checkshot_plot2['u-std'],y=df_checkshot_plot2['tvd_ss'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
+        try:
+            time = getTime(np.array(df_sonic['tvd_ss'].astype(float)), np.array(df_sonic['interval_velocity_sonic']))*1000
+            fig1.add_trace(go.Line(x=time,y=df_sonic['tvd_ss'].astype(float),name="Sonic Log", marker_color='blue'))
+        except:
+            st.write('No Sonic log available for this well')
 
         fig1.update_layout(
-        title=f'Time Domain',
+        title=f'#Time Domain',
         xaxis_title="TWT (ms)",
         yaxis_title='TVDSS (m)',
         autosize=False,
@@ -224,32 +242,38 @@ df_sonic_plot2 = df_sonic.copy(deep=True)
 with col4:
     container2 = st.container()
     with container2:
+        st.write('## Velocity Domain')
+        fig2 = go.Figure()
+        fig2.add_trace(go.Line(x=td_vp,y=td_z, line_color='red', name='Vp Checkshot', line_shape='hv'))
+
+
         try:
             std_sonic = st.slider("Standard deviation: Vp", 400, 600)
             df_sonic_plot2 = df_sonic_plot2.dropna(subset=['interval_velocity_sonic'])
             df_sonic_plot2['std_sonic'] = std_sonic   
             df_sonic_plot2['u+std'] = df_sonic_plot2['interval_velocity_sonic'] + df_sonic_plot2['std_sonic']
             df_sonic_plot2['u-std'] = df_sonic_plot2['interval_velocity_sonic'] - df_sonic_plot2['std_sonic']           
-            fig2 = go.Figure()
-            fig2.add_trace(go.Line(x=df_sonic_plot2['interval_velocity_sonic'],y=df_sonic_plot2['TVDMSL'],name="Sonic Log", marker_color='blue'))
-            fig2.add_trace(go.Line(x=df_sonic_plot2['u+std'],y=df_sonic_plot2['TVDMSL'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
-            fig2.add_trace(go.Line(x=df_sonic_plot2['u-std'],y=df_sonic_plot2['TVDMSL'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
             
-            fig2.add_trace(go.Line(x=td_vp,y=td_z, line_color='red', name='Vp Checkshot'))
+            fig2.add_trace(go.Line(x=df_sonic_plot2['interval_velocity_sonic'],y=df_sonic_plot2['tvd_ss'],name="Sonic Log", marker_color='blue'))
+            
+            fig2.add_trace(go.Line(x=df_sonic_plot2['u+std'],y=df_sonic_plot2['tvd_ss'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
+            fig2.add_trace(go.Line(x=df_sonic_plot2['u-std'],y=df_sonic_plot2['tvd_ss'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
+
 
             # Filling the area between the upper and lower bounds
+        except:
+            pass
             
-            
-            fig2.update_traces(connectgaps=True) 
-            fig2.update_layout(
-            title=f'Velocity Domain',
-            xaxis_title="Vp (m/s)",
-            yaxis_title='TVDSS (m)',
-            autosize=False,
-            width=900,
-            height=1800,
-            yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])],
-            showlegend=True)
+        fig2.update_traces(connectgaps=True) 
+        fig2.update_layout(
+        title=f'Velocity Domain',
+        xaxis_title="Vp (m/s)",
+        yaxis_title='TVDSS (m)',
+        autosize=False,
+        width=900,
+        height=1800,
+        yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])],
+        showlegend=True)
 
 
             #fig2 = px.line(df_sonic, x="vp", y="tvd_ss")  # Replace "x_column" and "y_column" with the appropriate column names from df_2   
@@ -263,20 +287,28 @@ with col4:
             #height=900,
             #yaxis_range=[max(df_checkshot["tvd_ss"]), min(df_checkshot["tvd_ss"])])
             
-            st.plotly_chart(fig2) 
-        except:
-            pass
+        st.plotly_chart(fig2)
 
 
 
 if st.button("Save Checkshot and Sonic data:"):
-    st.write("Checkshot file saved")
-    st.write("Sonic log saved")
-    st.session_state['Checkshot'] = td
-    st.session_state['Sonic_log'] = df_sonic_plot2
+    
+
+    try:
+        st.session_state['Checkshot'] = td
+        st.write(f"Checkshot file for well {uwi} saved")
+    except:
+        st.write(f'No Checkshot file for well {uwi}')
+    try:
+        st.session_state['Sonic_log'] = df_sonic
+        if not df_sonic.empty:
+            st.write(f"Sonic log saved for well {uwi}")
+        else:
+            pass
+            #st.write(f'No sonic log file for well {uwi}')
+    except:
+        print('d')
     st.session_state['uwi'] = uwi
 else:
     st.write("Files not yet saved...")
-
-
 

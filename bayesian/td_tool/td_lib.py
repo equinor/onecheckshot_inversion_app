@@ -52,6 +52,7 @@ from PIL import Image
 def extendLogsToZero(well_z, well_vp, water_depth, water_vel):
     
     # get time
+
     well_t = get_time(well_z, well_vp)
     
     # remove any logs values within water layer

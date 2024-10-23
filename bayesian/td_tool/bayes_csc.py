@@ -97,8 +97,8 @@ def redatum(well_z, well_vp, td_z, td_t, zstart = 0):
     
 class Run_Bayesian():
     def runCsc(self,well_z_in, well_vp_in, td_z_in, td_t_in, par):
-        #from bayesian.td_tool.td_lib import getVel, getDrift   
-        
+        from bayesian.td_tool.td_lib import getVel, getDrift   
+        from bayesian.td_tool.bayes_csc import getTime
         #run_2 = self.test(self, well_z_in, well_vp_in, td_z_in, td_t_in, par)
         ##########################
         # REDATUM to start depth #
@@ -107,7 +107,7 @@ class Run_Bayesian():
 
         zstart = par['zstart']    
         well_z, well_vp, td_z, td_t, well_z_top, well_vp_top, td_z_top, td_t_top = redatum(well_z_in, well_vp_in, td_z_in, td_t_in, zstart)
-
+        
         # derive time
         well_t = getTime(well_z, well_vp)
         #import ctypes
@@ -130,7 +130,7 @@ class Run_Bayesian():
         ###############
         # PRIOR model #        
         ###############
-
+        
         # set model uncertainty
         if par['std_vp_mode'] == 1: # percentage
             well_vp_std_dec = well_vp_dec * par['std_vp_perc'] 
@@ -159,7 +159,7 @@ class Run_Bayesian():
             C = np.eye(nc)
         # prior covariance matrix
         Sigma_m = np.outer(std_m, std_m.T) * C
- 
+
         ########
         # DATA #        
         ########
@@ -191,7 +191,6 @@ class Run_Bayesian():
         G = makeG(well_z_dec, td_z)
 
         # get solution
-
         mu_post,Sigma_post = PostGauss(G, d, Sigma_e, mu_m, Sigma_m)    
         
 
@@ -337,7 +336,6 @@ def makeG(well_z, td_z):
 
     # initiate matrix
     G = np.zeros((ntd, nwell))
-    from IPython import embed
     # depth step
     well_dz = np.diff(np.insert(well_z, 0, 0)) # assumes well_z starts depth > 0, inserts zero depth
     # loop through time-depth data

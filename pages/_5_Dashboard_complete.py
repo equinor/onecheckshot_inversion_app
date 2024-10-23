@@ -17,21 +17,25 @@ import plotly.graph_objects as go
 from bayesian.td_tool.runBayesCsc_2 import Bayesian_Inference
 from bayesian.td_tool.bayes_csc import getTime, getDrift
 from bayesian.td_tool.td_lib import getVel
-from pages._3_Checkshot_Data import get_data, filter_data
+#from pages._3_Checkshot_Data import get_data, filter_data
 
 df_sonic_2 = st.session_state['Sonic_log']
 df_checkshot_2 = st.session_state['Checkshot']
 df_checkshot = df_checkshot_2
 df_sonic = df_sonic_2
-raw_cks_df, df_checkshot, df_sonic = get_data()
-wells = raw_cks_df.uwi.unique().tolist()
-#uwi = st.selectbox(f"Select Well", options=wells)
+
+if df_sonic.empty:
+    st.write("No sonic log available.")
+    exit(0)
+#raw_cks_df, df_checkshot, df_sonic = get_data()
+#wells = raw_cks_df.uwi.unique().tolist()
+
 uwi = st.session_state['uwi']
 #df_checkshot, df_sonic, df_merged = filter_data(df_checkshot, df_sonic, raw_cks_df, uwi)
 st.write(f'Well Selected: {uwi}')
 st.write('You can either run the bayesian inference with Standard values or select some of the parameters yourself.')
 clas = Bayesian_Inference()
-df_well, td_z, td_t, ww, water_depth, water_velocity = clas.run(uwi)
+df_well, td_z, td_t, ww, water_depth, water_velocity = clas.run(df_checkshot, df_sonic, uwi)
 well_z = df_well['TVDMSL'].values
 well_vp_ext = df_well['VP_EXT'].values
 well_vp = df_well['VP_BAYES'].values
@@ -101,4 +105,6 @@ fig.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='line
 fig.update_yaxes(title_text="Y-axis 1", row=1, col=5, autorange='reversed', range=[0,yr])
 fig.update_xaxes(title_text="yaxis 2 title", range=[0, np.max(np.union1d(well_vp, td_vp)) * 1.2], row=1, col=5)
 fig.update_layout(width=1600, height=1200,legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)
+
+
 st.plotly_chart(fig)
