@@ -36,7 +36,7 @@ class Bayesian_Inference():
         dataframe_sonic_checkshot = dataframe_sonic_checkshot[dataframe_sonic_checkshot['uwi']==uwi]
         return dataframe_sonic_checkshot
 
-    def run(self, df_checkshot, df_sonic, apply_covariance, inversion_start_depth, decimation_step, uwi):    
+    def run(self, df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, inversion_start_depth, decimation_step, uwi):    
     #dataframe = pd.read_csv('td_tool/test_well_8.csv')
 
         #dataframe_sonic_checkshot = self.get_data(uwi)
@@ -176,10 +176,10 @@ class Bayesian_Inference():
                 # set parameters for bayesian check-shot correction
                 par = getDefaultPar()        
                 par['apply_corr'] = 0
-                par['istep_bayes'] = 3
+                par['istep_bayes'] = decimation_step
                 par['std_vp_mode'] = 2
-                par['std_vp_const'] = 500
-                par['std_t_const'] = 0.005
+                par['std_vp_const'] = std_sonic
+                par['std_t_const'] = std_checkshot
                 if apply_covariance == 'Apply':
                     par['apply_corr'] = 1
                 elif apply_covariance == 'Do not apply':  
@@ -205,7 +205,7 @@ class Bayesian_Inference():
                     class_bayes = Run_Bayesian()
 
                     well_vp, well_z, C = class_bayes.runCsc(well_z, well_vp, td_z, td_t, par)
-
+                    
                     print('...done')
                     # merge output with existing dataframe
                     #well_vp = well_vp
@@ -214,7 +214,7 @@ class Bayesian_Inference():
                     
                     df_well = pd.merge(df_well, df_bayes, how = 'outer', on=['TVDMSL'])   
                     df_well = df_well.sort_values('TVDMSL').reset_index(drop = True)                
-                    
+ 
                     # plot well                
                     #
                     #fig = bayes_well_plot(df_well, td_z, td_t, ww, water_depth = water_depth, water_vel = water_velocity)

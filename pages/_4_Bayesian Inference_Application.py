@@ -52,7 +52,7 @@ with col2:
         inversion_start_depth = float(inversion_start_depth)
     with col1_3:
         decimation_step = st.text_input(f"Define a decimation step. The lowest the value more accurate your inversion will be.", 10)
-        decimation_step = float(decimation_step)
+        decimation_step = int(decimation_step)
 
     st.write('### Definition of uncertainties')
     col1_4, col1_5 = st.columns(2)
@@ -60,7 +60,7 @@ with col2:
         std_sonic = st.text_input(f"Enter standard deviation for Sonic:", 500)
         std_sonic = float(std_sonic)
     with col1_5:
-        std_checkshot = st.text_input(f"Enter standard deviation for Checkshot:", 0.5)
+        std_checkshot = st.text_input(f"Enter standard deviation for Checkshot:", 0.005)
         std_checkshot = float(std_checkshot)    
 with col1:
     fig2 = go.Figure()
@@ -85,7 +85,7 @@ with col1:
         
     fig2.update_traces(connectgaps=True) 
     fig2.update_layout(
-    title=f'Velocity Domain',
+    title=f'Velocity plot for Well {uwi}',
     xaxis_title="Vp (m/s)",
     yaxis_title='TVDSS (m)',
     autosize=False,
@@ -107,24 +107,22 @@ with col1:
         #yaxis_range=[max(df_checkshot["tvd_ss"]), min(df_checkshot["tvd_ss"])])
         
     st.plotly_chart(fig2)
-
+    st.write("Figure x. Checkshot velocities, estimated interval velocities with confidence bounds (gray), unconstrained classical\
+             Dix inversion (black), and trend curve (gray).")
 
 
 
 with col2:
     #st.button("Reset", type="primary")
-    if st.button("Apply Bayesian Dix Inversion"):
+    if st.checkbox("Run Bayesian Dix Inversion"):
         clas = Bayesian_Inference()
-        df_well, td_z, td_t, ww, water_depth, water_velocity, C = clas.run(df_checkshot, df_sonic, apply_covariance, inversion_start_depth, decimation_step, uwi)
+        df_well, td_z, td_t, ww, water_depth, water_velocity, C = clas.run(df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, inversion_start_depth, decimation_step, uwi)        
     else:
         st.write("Inversion not running.")
     
 
 
-    fig, ax = plt.subplots(figsize=(2, 2))
-    #heatmap = ax.imshow(C, cmap='viridis')
-    #colorbar = plt.colorbar(heatmap,shrink=0.5, pad=0.1)
-    #st.pyplot(fig)
+
 
 
 #raw_cks_df, df_checkshot, df_sonic = get_data()
@@ -151,16 +149,19 @@ td_vp = td_df['vp'].values
 
 
 well_t_ext = getTime(well_z, well_vp_ext)
+
 well_t = getTime(well_z, well_vp)
-td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = getDrift(td_z, td_t, well_z, well_t_ext)    
+
+td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = getDrift(td_z, td_t, well_z, well_t_ext)  
+
 td_drift_t, td_drift_z, well_drift_t, well_drift_z = getDrift(td_z, td_t, well_z, well_t)    
 
 
 yr = [np.max(np.union1d(well_z, td_z)) * 1.1, 0]
 
 st.write("## Velocity plots")
-col1, col2, col3 = st.columns(3)
-with col1:
+col1_plot, col2_plot, col3_plot = st.columns(3)
+with col1_plot:
     
     fig1 = go.Figure()
     # Subplot 1: Velocity
@@ -179,7 +180,7 @@ with col1:
     legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)
     st.plotly_chart(fig1)
 
-with col2:
+with col2_plot:
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(x=well_vp, y=well_z, mode='lines', name='Vp Posterior', line=dict(color='blue')))
     fig2.add_trace(go.Line(x=td_vp, y=td_z, line_shape='hv',line=dict(color='red'),name='Vp Checkshot'))
@@ -199,7 +200,7 @@ with col2:
     st.plotly_chart(fig2)
 
 
-with col3:
+with col3_plot:
     fig3 = go.Figure()
     # Subplot 2: Velocity Difference
     xx = well_vp - well_vp_ext
@@ -223,12 +224,12 @@ with col3:
     legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)
     st.plotly_chart(fig3)
 
-col1, col2, col3 = st.columns(3)
-with col1:
+col1_legend, col2_legend, col3_legend = st.columns(3)
+with col1_legend:
     st.write("I. On the first plot it is shown the interval velocity from both checkshot and sonic log. The velocity from sonic was interpolated up to the seabed as the starting point for the bayesian inversion method.")
-with col2:
+with col2_legend:
     st.write("II. The second plot shows the updated time-depth relationship plotted against checkshot values.")
-with col3:
+with col3_legend:
     st.write("III. The third plot shows the difference between the updated velocity trend and the one only using sonic log data interpolated to the seabed.")
 
 col4, col5 = st.columns(2)
@@ -277,8 +278,18 @@ with col5:
     legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)
     st.plotly_chart(fig5)
 
-col1, col2 = st.columns(2)
-with col1:
+col4_legend, col5_legend = st.columns(2)
+with col4_legend:
     st.write("Plot showing the cumulative two-way travel times for checkshot data, posterior velocity model, and prior velocity model.")
-with col2:
+with col5_legend:
     st.write("V. The difference between the integrated sonic log and the checkshot in time is known as the drift curve. It is supposed that the drift between the new time-depth curve from bayesian inversion is smaller than the one coming from sonic log alone.")
+
+
+with col2:
+    if st.button("Display advanced parameters"):
+        fig, ax = plt.subplots(figsize=(2, 2))
+        heatmap = ax.imshow(C, cmap='viridis')
+        colorbar = plt.colorbar(heatmap,shrink=0.5, pad=0.1)
+        st.pyplot(fig)
+    else:
+        pass    
