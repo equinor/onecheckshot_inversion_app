@@ -23,20 +23,24 @@ with col1:
     st.write("""
 ## OneCheckshot App
 
-In this app you can compare checkshot data with Sonic Log data available. This platform provides a centralized hub for visualizing and analyzing checkshot data sourced from SMDA and sonic log data. 
-        It offers a comprehensive solution for researchers, engineers, and geologists to explore and interpret these geophysical datasets.
+In this app you can compare Checkshot data with Sonic Log data available. This platform provides a centralized hub for visualizing and analyzing checkshot data sourced from SMDA and sonic log data. It offers a comprehensive solution for researchers, engineers, and geologists to explore and interpret these geophysical datasets.
+
+Apart from analyzing the quality procedures applied, you can also use an iterative platform to generate a time-depth relationship from sonic log data calibrated with checkshot data.
          
 """)
     st.write("""
 ## What are checkshots?
 
-Checkshots are a geophysical technique used to determine the depth of a wellbore relative to the Earth's surface. 
+Checkshot is a type of borehole seismic data designed to measure the seismic traveltime from the surface to a known depth
+             
+Checkshot is a geophysical technique employed to determine the seismic travel time from the surface to a specific depth within a borehole. Each individual measurement of the source-receiver travel time constitutes a checkshot.\
+The collection and analysis of these travel time measurements to establish a time-depth calibration function is known as a checkshot survey.
 
 Method: A geophone is lowered down the borehole while a seismic source at the surface generates a pulse of energy. The time it takes for the pulse to travel down the borehole and be recorded by the geophone is measured. This process is repeated at various depths.
 
 Data: The checkshot provides direct measurements of the vertical travel time of seismic waves at specific depths.       
 """)
-    st.image('images/checkshot.jpg')
+    st.image('images/checkshot.jpg', width=600)
 with col2:
     st.image('images/equinor_blue.jpg')
     st.write("""

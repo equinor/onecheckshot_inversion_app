@@ -19,7 +19,7 @@ from bayesian.td_tool.bayes_csc import getTime
 from bayesian.td_tool.td_lib import getVel
 import pandas as pd
 from bayesian.td_tool.data_management_smda.connect_smda import Connection_Database, get_connect_database, generate_df
-
+from scipy.interpolate import interp1d
 
 
 #raw_cks_df, df_checkshot, df_sonic = get_data()
@@ -209,20 +209,27 @@ with col3:
         # Create your plot here
         st.write('## Time Domain')
         fig1 = go.Figure()
-        std_checkshot = st.slider("Standard deviation: TWT", 0.005, 0.05)
-        df_checkshot_plot2['std_checkshot'] = std_checkshot
+
         #fig1 = px.scatter(df_checkshot_plot2, x="twt picked", y="tvd_ss")
 
-        df_checkshot_plot2['u+std'] = df_checkshot_plot2["time"] + df_checkshot_plot2['std_checkshot']
-        df_checkshot_plot2['u-std'] = df_checkshot_plot2["time"] - df_checkshot_plot2['std_checkshot']           
+      
         fig1 = go.Figure()
         #fig1.add_trace(go.Line(x=df_checkshot_plot2["time"],y=df_checkshot_plot2['tvd_ss'],name="Checkshot", marker_color='red'))
         fig1.add_trace(go.Scatter(y=td["tvd_ss"],x=td["time"],mode="markers",marker=dict(color='red',size=10),name='Checkshot data'))
         #fig1.add_trace(go.Line(x=df_checkshot_plot2['u+std'],y=df_checkshot_plot2['tvd_ss'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
         #fig1.add_trace(go.Line(x=df_checkshot_plot2['u-std'],y=df_checkshot_plot2['tvd_ss'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
         try:
-            time = getTime(np.array(df_sonic['tvd_ss'].astype(float)), np.array(df_sonic['interval_velocity_sonic']))*1000
-            fig1.add_trace(go.Line(x=time,y=df_sonic['tvd_ss'].astype(float),name="Sonic Log", marker_color='blue'))
+            #time = getTime(np.array(df_sonic['tvd_ss'].astype(float)), np.array(df_sonic['interval_velocity_sonic']))*1000
+            #TWT for sonic data 
+            td_tointerpolate = td[['tvd_ss','time']].dropna()
+            interp_func = interp1d(td_tointerpolate['tvd_ss'].astype(float), td_tointerpolate['time'], kind='linear')
+            first_depth_sonic = float(np.array(df_sonic['tvd_ss'])[0])
+            first_time_sonic = float(interp_func(first_depth_sonic))
+            dz = np.diff(np.array(df_sonic['tvd_ss'].astype(float)))*1000
+            dz = np.insert(dz, 0, 0)
+            dt = 2 * dz / np.array(df_sonic['interval_velocity_sonic'])
+            t = np.cumsum(dt)+first_time_sonic
+            fig1.add_trace(go.Line(x=t,y=df_sonic['tvd_ss'].astype(float),name="Sonic Log", marker_color='blue'))
         except:
             st.write('No Sonic log available for this well')
 
@@ -248,16 +255,14 @@ with col4:
 
 
         try:
-            std_sonic = st.slider("Standard deviation: Vp", 400, 600)
+
             df_sonic_plot2 = df_sonic_plot2.dropna(subset=['interval_velocity_sonic'])
-            df_sonic_plot2['std_sonic'] = std_sonic   
-            df_sonic_plot2['u+std'] = df_sonic_plot2['interval_velocity_sonic'] + df_sonic_plot2['std_sonic']
-            df_sonic_plot2['u-std'] = df_sonic_plot2['interval_velocity_sonic'] - df_sonic_plot2['std_sonic']           
+
+        
             
             fig2.add_trace(go.Line(x=df_sonic_plot2['interval_velocity_sonic'],y=df_sonic_plot2['tvd_ss'],name="Sonic Log", marker_color='blue'))
             
-            fig2.add_trace(go.Line(x=df_sonic_plot2['u+std'],y=df_sonic_plot2['tvd_ss'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
-            fig2.add_trace(go.Line(x=df_sonic_plot2['u-std'],y=df_sonic_plot2['tvd_ss'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
+
 
 
             # Filling the area between the upper and lower bounds
@@ -311,4 +316,5 @@ if st.button("Save Checkshot and Sonic data:"):
     st.session_state['uwi'] = uwi
 else:
     st.write("Files not yet saved...")
+
 

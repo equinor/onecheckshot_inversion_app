@@ -36,7 +36,7 @@ class Bayesian_Inference():
         dataframe_sonic_checkshot = dataframe_sonic_checkshot[dataframe_sonic_checkshot['uwi']==uwi]
         return dataframe_sonic_checkshot
 
-    def run(self, df_checkshot, df_sonic, uwi):    
+    def run(self, df_checkshot, df_sonic, apply_covariance, inversion_start_depth, decimation_step, uwi):    
     #dataframe = pd.read_csv('td_tool/test_well_8.csv')
 
         #dataframe_sonic_checkshot = self.get_data(uwi)
@@ -180,10 +180,18 @@ class Bayesian_Inference():
                 par['std_vp_mode'] = 2
                 par['std_vp_const'] = 500
                 par['std_t_const'] = 0.005
-                par['apply_corr'] = 1  #these three were not activated
+                if apply_covariance == 'Apply':
+                    par['apply_corr'] = 1
+                elif apply_covariance == 'Do not apply':  
+                    par['apply_corr'] = 0
+                else:
+                    par['apply_corr'] = 0
+                    #these three were not activated
                 par['corr_order'] = 1.8
-                par['corr_range'] = 100             
-                par['zstart'] = well_z[1] # start at seabed
+                par['corr_range'] = 100
+
+                par['zstart'] = inversion_start_depth             
+                #par['zstart'] = well_z[1] # start at seabed
                  
                 try:
                 #if 1:
@@ -196,7 +204,7 @@ class Bayesian_Inference():
                     
                     class_bayes = Run_Bayesian()
 
-                    well_vp, well_z = class_bayes.runCsc(well_z, well_vp, td_z, td_t, par)
+                    well_vp, well_z, C = class_bayes.runCsc(well_z, well_vp, td_z, td_t, par)
 
                     print('...done')
                     # merge output with existing dataframe
@@ -223,7 +231,7 @@ class Bayesian_Inference():
         except:
             print(f'Bayesian inference could not be applied for well')
             pass
-        return df_well, td_z, td_t, ww, water_depth, water_velocity
+        return df_well, td_z, td_t, ww, water_depth, water_velocity, C
 
 #clas = Bayesian_Inference()
 #df_well, td_z, td_t, ww, water_depth, water_velocity = clas.run(uwi='NO 34/7-22') #'NO 1/9-7 T3'

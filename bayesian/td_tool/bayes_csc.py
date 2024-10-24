@@ -248,7 +248,7 @@ class Run_Bayesian():
         well_z_out = well_z_in
         well_vp_out = np.insert(well_vp_post, 0, well_vp_top)
         
-        return well_vp_out,well_z_out#,well_t_out
+        return well_vp_out,well_z_out, C#,well_t_out
     
     
     #%%%%%%%%%%%%%%%%%%%%%
@@ -415,8 +415,11 @@ def getVel(zz, tt):
 def getTime(z, vp):
     
     # assumes first depth is > zero
+
     dz = np.diff(z) # depth step in meters
+    
     dz = np.insert(dz, 0, z[0])
+
     dt = 2 * dz / vp # velocity in m/s, time in s
     t = np.cumsum(dt)    
 
