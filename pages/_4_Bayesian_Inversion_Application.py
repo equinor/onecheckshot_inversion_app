@@ -19,11 +19,6 @@ from bayesian.td_tool.bayes_csc import getTime, getDrift
 from bayesian.td_tool.td_lib import getVel
 #from pages._3_Checkshot_Data import get_data, filter_data
 plots_posteriori = False
-df_sonic_2 = st.session_state['Sonic_log']
-df_checkshot_2 = st.session_state['Checkshot']
-df_checkshot = df_checkshot_2
-df_sonic = df_sonic_2
-uwi = st.session_state['uwi']
 st.write('# Bayesian Inversion')
 col1, col2 = st.columns(2)
 
@@ -32,9 +27,21 @@ with col1:
     st.write('Welcome to the Bayesian Inversion section! Bayesian inference can be a method to apply drift on the sonic log using checkshot data. The aim is to generate a time-depth relationship that keeps the high-resolution from sonic log, but that also matches the full coverage from checkshot data.\
             The output is a ready-to-use velocity trend for multipliple purposes: well-tie; depth conversion; seismic depth processing; etc. You can either run the bayesian inference with Standard values or select some of the parameters yourself')
 
+df_sonic = st.session_state['Sonic_log']
+df_checkshot = st.session_state['Checkshot']
+uwi = st.session_state['uwi']
+
+if df_checkshot.empty:
+    st.write(f"No data available.")
+    exit(0)
+else:
+    pass    
 if df_sonic.empty:
-    st.write("No sonic log available.")
-    exit(0)   
+    st.write(f"No sonic log available for Well {uwi}.")
+    exit(0)
+else:
+    pass 
+
 
 with col2:
     st.write('## Select parameters for Bayesian Inversion')
@@ -132,7 +139,7 @@ if plots_posteriori == True:
     well_z = df_well['TVDMSL'].values
     well_vp_ext = df_well['VP_EXT'].values
     well_vp = df_well['VP_BAYES'].values
-
+    
     td_vp = getVel(td_z, td_t)
 
     td_df = pd.DataFrame({'depth':td_z,'twt':td_t,'vp':td_vp})
@@ -149,7 +156,7 @@ if plots_posteriori == True:
     td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = getDrift(td_z, td_t, well_z, well_t_ext)  
 
     td_drift_t, td_drift_z, well_drift_t, well_drift_z = getDrift(td_z, td_t, well_z, well_t)    
-
+    st.write(well_vp)
 
     yr = [np.max(np.union1d(well_z, td_z)) * 1.1, 0]
 
