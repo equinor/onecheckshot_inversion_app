@@ -192,7 +192,6 @@ class Run_Bayesian():
 
         # get solution
         mu_post,Sigma_post = PostGauss(G, d, Sigma_e, mu_m, Sigma_m)    
-        
 
         #start_time_2 = time.time()
         #mu_post_cpp,Sigma_post_cpp = pg.PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
@@ -201,13 +200,14 @@ class Run_Bayesian():
         
         # derive posterior data
         well_vp_dec_post = 1 / mu_post
-            
+        sigma_post_d = np.diag(Sigma_post)
         # derive posterior covariance for velocity (from slowness):
-        v_min = 1/(mu_post + Sigma_post)
+        v_min = 1/(mu_post + sigma_post_d )
         v_max = 1/(mu_post - Sigma_post)
 
         std_vel = well_vp_dec_post - v_min
 
+ 
         
 
         ####################################
@@ -217,8 +217,13 @@ class Run_Bayesian():
         
         # resample back to original depth sampling via time curve    
         well_t_dec_post = getTime(well_z_dec, well_vp_dec_post)
-        ff = interp1d(np.insert(well_z_dec, 0, 0), np.insert(well_t_dec_post, 0, 0), kind = 'linear', bounds_error = False, fill_value = np.nan)                             
+        ff = interp1d(np.insert(well_z_dec, 0, 0), np.insert(well_t_dec_post, 0, 0), kind = 'linear', bounds_error = False, fill_value = np.nan)                          
         well_t_post = ff(well_z)
+
+        #resample back standard deviation for velocity
+        std_function = interp1d(np.insert(well_z_dec, 0, 0), np.insert(std_vel, 0, 0), kind = 'linear', bounds_error = False, fill_value = np.nan)
+        
+        
 
         
         # median filtering of time curve
@@ -227,7 +232,7 @@ class Run_Bayesian():
         # get output velocity from interpolated time
         well_vp_post = getVel(well_z, well_t_post)
         well_vp_diff = well_vp_post - well_vp
-        
+
     #     print(well_vp_diff[:10])
         
         # final smoothing of velocity update
@@ -247,8 +252,12 @@ class Run_Bayesian():
         # add start depth 
         well_z_out = well_z_in
         well_vp_out = np.insert(well_vp_post, 0, well_vp_top)
-        
-        return well_vp_out,well_z_out, C#,well_t_out
+        std_function = interp1d(well_z_dec, std_vel, kind = 'linear', bounds_error = False, fill_value = np.nan)
+        std_total_depth = std_function(well_z_out)
+        print(std_total_depth)
+
+    
+        return well_vp_out,well_z_out, C, std_total_depth#,well_t_out
     
     
     #%%%%%%%%%%%%%%%%%%%%%
@@ -467,6 +476,7 @@ def PostGauss(G,d,Sigma_e,mu_m,Sigma_m):
     N = np.linalg.inv(Sigma_d).dot(G.dot(Sigma_m))
 
     Sigma_post = Sigma_m - Sigma_m.dot(G.T).dot(N)
+
 
     return mu_post, Sigma_post
 

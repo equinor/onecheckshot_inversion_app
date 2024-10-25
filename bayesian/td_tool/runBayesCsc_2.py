@@ -204,7 +204,7 @@ class Bayesian_Inference():
                     
                     class_bayes = Run_Bayesian()
 
-                    well_vp, well_z, C = class_bayes.runCsc(well_z, well_vp, td_z, td_t, par)
+                    well_vp, well_z, C, std_total_depth = class_bayes.runCsc(well_z, well_vp, td_z, td_t, par)
                     
                     print('...done')
                     # merge output with existing dataframe
@@ -231,7 +231,7 @@ class Bayesian_Inference():
         except:
             print(f'Bayesian inference could not be applied for well')
             pass
-        return df_well, td_z, td_t, ww, water_depth, water_velocity, C
+        return df_well, td_z, td_t, ww, water_depth, water_velocity, C, std_total_depth
 
 #clas = Bayesian_Inference()
 #df_well, td_z, td_t, ww, water_depth, water_velocity = clas.run(uwi='NO 34/7-22') #'NO 1/9-7 T3'
