@@ -37,9 +37,9 @@ with col1:
     
     st.write("""
 ## Methodology
-#### The workflow for generating the updated time-depth relationship is illustrated on Figure x. The first step is to extend to seabed, which can be detailed using velocity trends estimated from other log data (density log for example) and using general theoretical trends. Once the velocity trend is created, Bayes' theorem can be applied to correct it using sonic log. The output is a continuous high-resolution velocity log and time-depth curve from z=0.""")
+#### The workflow for generating the updated time-depth relationship is illustrated on Figure x (Source?). The first step is to extend to seabed, which can be detailed using velocity trends estimated from other log data (density log for example) and using general theoretical trends. Once the velocity trend is created, Bayes' theorem can be applied to correct it using sonic log. The output is a continuous high-resolution velocity log and time-depth curve from z=0.""")
     st.image('images/methodology.jpg')         
-    st.write("""#### The Bayes' Theorem can be described in the application of this workflow with equation x. It involves formulating a prior probability distribution for the model, p(m), which is here interval velocity from sonic log, and then regard the measured checkshot points as a set of data, d. A likelihood function, p(d|m), that represents the conditional probability of measuring a given set of data d given the model m is defined by assuming a measurement error, e. By Bayes’rule the inversion solution is obtained as a posterior probability function
+    st.write("""#### The Bayes' Theorem can be described in the application of this workflow with equation x (Dischler et al. 2013). It involves formulating a prior probability distribution for the model, p(m), which is here interval velocity from sonic log, and then regard the measured checkshot points as a set of data, d. A likelihood function, p(d|m), that represents the conditional probability of measuring a given set of data d given the model m is defined by assuming a measurement error, e. By Bayes’rule the inversion solution is obtained as a posterior probability function
 
 ## p(m|d) ∝ p(d|m)p(m).
              
@@ -47,7 +47,7 @@ with col1:
 ###### p(d|m) - Likelihood function
 ###### p(m) - Sonic Log interval Velocity interpolated up to the surface             
 
-#### In the context of applying shift to sonic log data using checkshot data, the forward model is a simple linear relationship that assumes the checkshot data is equal to the sonic log data plus a constant shift. Because the solution is of an explicit analytic form, the bayesian inversion is computationally fast and does not require stochastic simulation.
+#### In the context of applying shift to sonic log data using checkshot data, the forward model is a simple linear relationship that assumes the checkshot data is equal to the sonic log data plus a constant shift. Because the solution is of an explicit analytic form, the bayesian inversion is computationally fast and does not require stochastic simulation (Dischler et al., 2013).
 """)
 
 
@@ -78,4 +78,6 @@ interpretation. Finally, Bayesian inference can handle large datasets and comple
 
 st.write(""" ## References\
          
-Buland, A., Kolbjørnsen, O., & Carter, A. J. (2011). Bayesian dix inversion. Geophysics, 76(2), R15-R22.""")
+Buland, A., Kolbjørnsen, O., & Carter, A. J. (2011). Bayesian dix inversion. Geophysics, 76(2), R15-R22.
+         
+Dischler, E., Hokstad, K., & Buland, A. (2013). Bayesian anisotropic Dix inversion. In SEG Technical Program Expanded Abstracts 2013 (pp. 4853-4857). Society of Exploration Geophysicists.""")
