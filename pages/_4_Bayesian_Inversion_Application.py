@@ -26,18 +26,22 @@ with col1:
     st.write('## Application')
     st.write('Welcome to the Bayesian Inversion section! Bayesian inference can be a method to apply drift on the sonic log using checkshot data. The aim is to generate a time-depth relationship that keeps the high-resolution from sonic log, but that also matches the full coverage from checkshot data.\
             The output is a ready-to-use velocity trend for multipliple purposes: well-tie; depth conversion; seismic depth processing; etc. You can either run the bayesian inference with Standard values or select some of the parameters yourself')
-
-df_sonic = st.session_state['Sonic_log']
-df_checkshot = st.session_state['Checkshot']
-uwi = st.session_state['uwi']
+try:
+    df_sonic = st.session_state['Sonic_log']
+    df_checkshot = st.session_state['Checkshot']
+    uwi = st.session_state['uwi']
+except:
+    df_sonic = pd.DataFrame()
+    df_checkshot = pd.DataFrame()
+    pass
 
 if df_checkshot.empty:
-    st.write(f"No data available.")
+    st.write(f"No data available. Please select and save some well in section '3 Data Visualization'")
     exit(0)
 else:
     pass    
 if df_sonic.empty:
-    st.write(f"No sonic log available for Well {uwi}.")
+    st.write(f"No sonic log available for Well {uwi}. In order to apply the Bayesian Inversion Method it is necessary to have both Checkshot data and Sonic Log data.")
     exit(0)
 else:
     pass 
