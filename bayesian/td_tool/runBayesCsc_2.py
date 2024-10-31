@@ -29,19 +29,9 @@ class Bayesian_Inference():
     def __init__(self):
         pass
 
-    def get_data(self, uwi):
-        self.directory = Path(__file__).parents[2]/'data/checkshot_sonic_table.csv'
-        
-        dataframe_sonic_checkshot = pd.read_csv(self.directory)
-        dataframe_sonic_checkshot = dataframe_sonic_checkshot[dataframe_sonic_checkshot['uwi']==uwi]
-        return dataframe_sonic_checkshot
 
     def run(self, df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, inversion_start_depth, decimation_step, uwi):    
-    #dataframe = pd.read_csv('td_tool/test_well_8.csv')
 
-        #dataframe_sonic_checkshot = self.get_data(uwi)
-
-        print(df_checkshot.columns)
         #####################
         # START: PARAMETERS #
         #####################
@@ -213,8 +203,9 @@ class Bayesian_Inference():
                     df_bayes = pd.DataFrame({'TVDMSL': well_z,'VP_BAYES': well_vp})
                     
                     df_well = pd.merge(df_well, df_bayes, how = 'outer', on=['TVDMSL'])   
-                    df_well = df_well.sort_values('TVDMSL').reset_index(drop = True)                
- 
+                    df_well = df_well.sort_values('TVDMSL').reset_index(drop = True)  
+
+
                     # plot well                
                     #
                     #fig = bayes_well_plot(df_well, td_z, td_t, ww, water_depth = water_depth, water_vel = water_velocity)
