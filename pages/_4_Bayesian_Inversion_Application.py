@@ -160,7 +160,7 @@ if plots_posteriori == True:
     td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = getDrift(td_z, td_t, well_z, well_t_ext)  
 
     td_drift_t, td_drift_z, well_drift_t, well_drift_z = getDrift(td_z, td_t, well_z, well_t)    
-    st.write(df_well)
+    st.write(well_t_ext)
 
     yr = [np.max(np.union1d(well_z, td_z)) * 1.1, 0]
 

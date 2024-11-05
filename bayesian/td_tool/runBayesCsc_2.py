@@ -73,7 +73,10 @@ class Bayesian_Inference():
         df_sonic = df_sonic.rename(columns={'interval_velocity_sonic': 'vp'})
 
         df_checkshot = df_checkshot[['tvd_ss','time', 'average_velocity', 'interval_velocity', 'depth_source']].dropna(subset='time')
-        water_velocity = float(df_checkshot[df_checkshot['depth_source']=='seabed from smda']['average_velocity'].iloc[0])   
+        first_row_seabed = df_checkshot[df_checkshot['depth_source'].str.contains('seabed')].iloc[0]
+        water_velocity = float(first_row_seabed['average_velocity'])
+        #water_velocity = float(df_checkshot[df_checkshot['depth_source']=='seabed from smda']['average_velocity'].iloc[0]) 
+
 
         df_sonic = df_sonic[['tvd_ss','vp']].dropna(subset='vp')
 
@@ -133,11 +136,11 @@ class Bayesian_Inference():
             # get water depth            
             if runWell:
 
-                water_depth = df_checkshot.loc[df_checkshot['depth_source'] == 'seabed from smda']['tvd_ss']
+                water_depth = first_row_seabed['tvd_ss']
                    
-                water_depth = float(water_depth.iloc[0])    
-                water_twt = df_checkshot.loc[df_checkshot['depth_source'] == 'seabed from smda']['time']
-                water_twt = float(water_twt.iloc[0])
+                water_depth = float(water_depth)    
+                water_twt = first_row_seabed['time']
+                water_twt = float(water_twt)
 
                 #ii = (td_z > water_depth)
                 ##td_z = np.union1d([0, water_depth], td_z[ii])
