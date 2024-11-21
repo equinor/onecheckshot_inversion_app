@@ -68,9 +68,10 @@ with col2:
 
     try:
         df_well_log = generate_df(host, dbname, user, password, sslmode, columns_sonic, database_well_log, uwi=uwi)
+        df_well_log['curve_identifier'] = df_well_log['curve_identifier'].replace('LFP_DT', 'DT')
+        selected_source_welllog = st.selectbox(f"Select Sonic Log File", options=df_well_log['source'].unique())
 
-
-
+        df_well_log = df_well_log[df_well_log['source'] == selected_source_welllog]
 
         df_well_log['data'] = df_well_log['data'].str.replace('[', '', regex=False).str.replace(']', '', regex=False)
         df_well_log['data'] = df_well_log['data'].apply(lambda x: x.split(','))
@@ -78,32 +79,32 @@ with col2:
         df_encoded = pd.get_dummies(df_well_log['curve_identifier'])
         df_well_log = pd.concat([df_well_log, df_encoded], axis=1)
 
-        
-        df_pivoted = df_well_log.pivot(index='unique_wellbore_identifier', columns=['LFP_DT', 'TVDMSL'], values='data')
+        print(df_well_log.columns)
+        df_pivoted = df_well_log.pivot(index='unique_wellbore_identifier', columns=['DT', 'TVDMSL'], values='data')
         df_pivoted.columns = df_pivoted.columns.droplevel(0)
         df_pivoted = df_pivoted.reset_index().rename_axis(None, axis=1)
-        df_pivoted = df_pivoted.rename(columns={df_pivoted.columns[1]: "LFP_DT"})
+        df_pivoted = df_pivoted.rename(columns={df_pivoted.columns[1]: "DT"})
         df_pivoted = df_pivoted.rename(columns={df_pivoted.columns[2]: "TVDMSL"})
         #
-        df_pivoted["equal_lenght"] = df_pivoted.LFP_DT.str.len()==df_pivoted.TVDMSL.str.len()
+        df_pivoted["equal_lenght"] = df_pivoted.DT.str.len()==df_pivoted.TVDMSL.str.len()
         df_pivoted = df_pivoted[df_pivoted["equal_lenght"]]
-        df_exploded = df_pivoted.explode(['LFP_DT','TVDMSL']).reset_index(drop=True)
+        df_exploded = df_pivoted.explode(['DT','TVDMSL']).reset_index(drop=True)
         df_exploded.replace("null", np.nan, inplace=True)
-        df_filtered = df_exploded.dropna(subset=['LFP_DT'])
+        df_filtered = df_exploded.dropna(subset=['DT'])
         df_filtered = df_filtered.drop('equal_lenght', axis=1)
         #criteria = df_filtered['unique_wellbore_identifier'].str.startswith('NO 711')
         #df_filtered = df_filtered[criteria]
         #df_filtered['interval_velocity_sonic'] = 0.3048/(float(df_filtered['LFP_DT'])*0.000001)
-        df_filtered['interval_velocity_sonic'] = [0.3048/(float(sonic)*0.000001) if sonic != 0 else 0 for sonic in df_filtered['LFP_DT']]
-        df_filtered['source'] = 'LFP'
+        df_filtered['interval_velocity_sonic'] = [0.3048/(float(sonic)*0.000001) if sonic != 0 else 0 for sonic in df_filtered['DT']]
+        
         df_filtered = df_filtered.rename(columns={'TVDMSL':'tvd_ss'})
 
 
-    except:
+    except Exception as e:
         df_filtered = pd.DataFrame()
         df_filtered['source'] = np.NaN
 
-    selected_source_welllog = st.selectbox(f"Select Sonic Log File", options=df_filtered['source'].unique())
+    #selected_source_welllog = st.selectbox(f"Select Sonic Log File", options=df_filtered['source'].unique())
     st.write(df_filtered)    
     
 
@@ -115,20 +116,7 @@ td = df[['md','tvd','tvd_ss', 'depth_reference_elevation', 'time', 'qc_descripti
 
 
 
-if isinstance(td, pd.DataFrame): 
-    
-    # get data
-    td_z = td['tvd_ss'].values
-    td_t = td['time'].values
-    td_t = td_t*0.001
-    td_vp = td['interval_velocity'].values
-    
 
-else:
-    print('ERROR: empty time depth - skipping well')
-    runWell = 0 # skip this well
-
-print("djd")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -200,6 +188,35 @@ with col2:
 #st.write([type(x) for x in np.array(df_sonic['tvd_ss']).astype(float)])
 #st.write([type(x) for x in df_sonic['interval_velocity_sonic']])
 
+def decimate_dataframe(df, decimate_step):
+    """Decimates a DataFrame by selecting every `decimate_step`-th row.
+
+    Args:
+        df: The input DataFrame.
+        decimate_step: The decimation step size.
+
+    Returns:
+        The decimated DataFrame.
+    """
+
+    ibayes = np.arange(decimate_step - 1, len(df), decimate_step)
+    ibayes[-1] = len(df) - 1  # Ensure the last row is included
+
+    df_decimated = df.iloc[ibayes]
+    return df_decimated
+
+col1, col2 = st.columns(2)
+with col1:
+    decimate_step = int(st.text_input(f"Enter Decimation Step for Checkshot Data:", 0))
+    if decimate_step == 0:
+        pass
+    else:
+        
+        td_seabed_sealevel = td[(td['depth_source'].str.contains('seabed') | (td['depth_source'].str.contains('sealevel')))]
+        td_to_decimate = td[~(td['depth_source'].str.contains('seabed') | (td['depth_source'].str.contains('sealevel')))]
+        td_decimate = decimate_dataframe(td_to_decimate, decimate_step)
+        td = (pd.concat([td_seabed_sealevel, td_decimate]))
+
 
 #embed()
 col3, col4 = st.columns(2)
@@ -245,6 +262,20 @@ with col3:
         st.plotly_chart(fig1)
 
 df_sonic_plot2 = df_sonic.copy(deep=True)
+
+
+if isinstance(td, pd.DataFrame): 
+    
+    # get data
+    td_z = td['tvd_ss'].values
+    td_t = td['time'].values
+    td_t = td_t*0.001
+    td_vp = td['interval_velocity'].values
+    
+
+else:
+    print('ERROR: empty time depth - skipping well')
+    runWell = 0 # skip this well
 
 with col4:
     container2 = st.container()

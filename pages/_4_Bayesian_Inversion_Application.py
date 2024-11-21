@@ -25,7 +25,7 @@ col1, col2 = st.columns(2)
 with col1:
     st.write('## Application')
     st.write('Welcome to the Bayesian Inversion section! Bayesian inference can be a method to apply drift on the sonic log using checkshot data. The aim is to generate a time-depth relationship that keeps the high-resolution from sonic log, but that also matches the full coverage from checkshot data.\
-            The output is a ready-to-use velocity trend for multipliple purposes: well-tie; depth conversion; seismic depth processing; etc. You can either run the bayesian inference with Standard values or select some of the parameters yourself')
+            The output is a ready-to-use velocity trend for multipliple purposes: well-tie; depth conversion; seismic depth processing; etc. You can either run the bayesian inference with Standard values or select some of the parameters yourself.')
 try:
     df_sonic = st.session_state['Sonic_log']
     df_checkshot = st.session_state['Checkshot']
@@ -59,14 +59,16 @@ with col2:
         )
     with col1_2:
         inversion_start_depth = st.text_input(f"Assign from which depth the inversion is starting from..\
-                                                Standard value for well {uwi} is seabed depth: {float(df_checkshot[df_checkshot['depth_source']=='seabed from smda']['tvd_ss'])} m", float(df_checkshot[df_checkshot['depth_source']=='seabed from smda']['tvd_ss']))
+                                                Standard value for well {uwi} is seabed depth: {float(df_checkshot[(df_checkshot['depth_source'] == 'seabed from smda') | (df_checkshot['depth_source'] == 'seabed detected')]['tvd_ss'])} m", float(df_checkshot[(df_checkshot['depth_source'] == 'seabed from smda') | (df_checkshot['depth_source'] == 'seabed detected')]['tvd_ss']))
         inversion_start_depth = float(inversion_start_depth)
     with col1_3:
         decimation_step = st.text_input(f"Define a decimation step. The lowest the value more accurate your inversion will be.", 10)
         decimation_step = int(decimation_step)
 
     st.write('### Definition of uncertainties')
+    st.write('Uncertainty associated to Sonic log shall be higher than the one associated to Checkshot Data')
     col1_4, col1_5 = st.columns(2)
+    
     with col1_4:
         std_sonic = st.text_input(f"Enter standard deviation for Sonic:", 500)
         std_sonic = float(std_sonic)
@@ -160,7 +162,7 @@ if plots_posteriori == True:
     td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = getDrift(td_z, td_t, well_z, well_t_ext)  
 
     td_drift_t, td_drift_z, well_drift_t, well_drift_z = getDrift(td_z, td_t, well_z, well_t)    
-    st.write(well_t_ext)
+    #st.write(well_t_ext)
 
     yr = [np.max(np.union1d(well_z, td_z)) * 1.1, 0]
 
