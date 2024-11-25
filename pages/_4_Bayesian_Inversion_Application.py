@@ -17,6 +17,7 @@ import plotly.graph_objects as go
 from bayesian.td_tool.runBayesCsc_2 import Bayesian_Inference
 from bayesian.td_tool.bayes_csc import getTime, getDrift
 from bayesian.td_tool.td_lib import getVel
+import time
 #from pages._3_Checkshot_Data import get_data, filter_data
 plots_posteriori = False
 st.write('# Bayesian Inversion')
@@ -128,8 +129,13 @@ with col1:
 with col2:
     #st.button("Reset", type="primary")
     if st.checkbox("Run Bayesian Dix Inversion"):
+        start_time = time.time()
+    #if st.button("Run Bayesian Dix Inversion"):
         clas = Bayesian_Inference()
         df_well, td_z, td_t, ww, water_depth, water_velocity, C, std_total_depth = clas.run(df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, inversion_start_depth, decimation_step, uwi)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        st.write(f"Time taken to run Bayesian Dix Inversion: {elapsed_time:.2f} seconds")
         plots_posteriori = True        
     else:
         st.write("Inversion not running.")
@@ -169,7 +175,7 @@ if plots_posteriori == True:
 
 
     st.write("## Velocity plots")
-    col1_plot, col2_plot, col3_plot = st.columns(3)
+    col1_plot, col2_plot, col3_plot, col4_plot = st.columns(4)
     with col1_plot:
         
         fig1 = go.Figure()
@@ -178,7 +184,7 @@ if plots_posteriori == True:
         fig1.add_trace(go.Line(x=td_vp, y=td_z, line_shape='hv',line=dict(color='red'), name='Vp Checkshot'))
         fig1.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed'))
         fig1.update_layout(
-        title=f'Velocity',
+        title=f'Velocity Input (Prior)',
         xaxis_title="Velocity (m/s)",
         yaxis_title='TVDSS (m)',
         autosize=False,
@@ -196,7 +202,7 @@ if plots_posteriori == True:
         fig2.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed'))
         #fig2.update_layout(width=1600, height=1200,legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)
         fig2.update_layout(
-        title=f'Velocity Posterior',
+        title=f'Velocity Output (Posterior)',
         xaxis_title="Velocity (m/s)",
         yaxis_title='TVDSS (m)',
         autosize=False,
@@ -212,15 +218,40 @@ if plots_posteriori == True:
     with col3_plot:
         fig3 = go.Figure()
         # Subplot 2: Velocity Difference
-        xx = well_vp - well_vp_ext
-        fig3.add_trace(go.Scatter(x=xx, y=well_z, mode='lines', line=dict(color='blue'), name="Vp Posterior - Vp Prior"))
-        xmin = np.min(xx) - 10
-        xmax = np.max(xx) + 10
+        #xx = well_vp - well_vp_ext
+        #fig3.add_trace(go.Scatter(x=xx, y=well_z, mode='lines', line=dict(color='blue'), name="Vp Posterior - Vp Prior"))
+        fig3.add_trace(go.Line(x=td_vp, y=td_z, line_shape='hv',line=dict(color='red'),name='Vp Checkshot'))
+        fig3.add_trace(go.Scatter(x=well_vp_ext, y=well_z, mode='lines', name='Vp Prior', line=dict(color='green')))
+        fig3.add_trace(go.Scatter(x=well_vp, y=well_z, mode='lines', name='Vp Posterior', line=dict(color='blue')))
+        #xmin = np.min(xx) - 10
+        #xmax = np.max(xx) + 10
         fig3.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed'))
 
-        fig3.add_vline(x=0, line_width=1, line_color="black")
-
         fig3.update_layout(
+        title=f'Comparison',
+        xaxis_title="Velocity (m/s)",
+        yaxis_title='TVDSS (m)',
+        autosize=False,
+        width=900,
+        height=1800,
+        xaxis_range=[0, np.max(np.union1d(well_vp, td_vp)) * 1.2],
+        yaxis_range=[0,yr],
+        yaxis=dict(autorange='reversed'),
+        legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)
+        st.plotly_chart(fig3)
+    
+    with col4_plot:
+        fig4 = go.Figure()
+        # Subplot 2: Velocity Difference
+        xx = well_vp - well_vp_ext
+        fig4.add_trace(go.Scatter(x=xx, y=well_z, mode='lines', line=dict(color='blue'), name="Vp Posterior - Vp Prior"))
+        xmin = np.min(xx) - 10
+        xmax = np.max(xx) + 10
+        fig4.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed'))
+
+        fig4.add_vline(x=0, line_width=1, line_color="black")
+
+        fig4.update_layout(
         title=f'Velocity Difference',
         xaxis_title="Velocity (m/s)",
         yaxis_title='TVDSS (m)',
@@ -231,15 +262,17 @@ if plots_posteriori == True:
         yaxis_range=[0,yr],
         yaxis=dict(autorange='reversed'),
         legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)
-        st.plotly_chart(fig3)
+        st.plotly_chart(fig4)     
 
-    col1_legend, col2_legend, col3_legend = st.columns(3)
+    col1_legend, col2_legend, col3_legend, col4_legend = st.columns(4)
     with col1_legend:
         st.write("I. On the first plot it is shown the interval velocity from both checkshot and sonic log. The velocity from sonic was interpolated up to the seabed as the starting point for the bayesian inversion method.")
     with col2_legend:
         st.write("II. The second plot shows the updated time-depth relationship plotted against checkshot values.")
     with col3_legend:
-        st.write("III. The third plot shows the difference between the updated velocity trend and the one only using sonic log data interpolated to the seabed.")
+        st.write("III. The third plot shows the comparison between the updated velocity trend and the one only using sonic log data interpolated to the seabed.")
+    with col4_legend:
+        st.write("Plot IV plot shows the difference between the updated velocity trend and the one only using sonic log data interpolated to the seabed.")
 
     col4, col5 = st.columns(2)
     with col4:
