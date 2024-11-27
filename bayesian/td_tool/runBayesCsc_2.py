@@ -30,7 +30,7 @@ class Bayesian_Inference():
         pass
 
 
-    def run(self, df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, inversion_start_depth, decimation_step, uwi):    
+    def run(self, df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, corr_order, inversion_start_depth, decimation_step, uwi):    
 
         #####################
         # START: PARAMETERS #
@@ -180,7 +180,8 @@ class Bayesian_Inference():
                 else:
                     par['apply_corr'] = 0
                     #these three were not activated
-                par['corr_order'] = 1.8
+
+                par['corr_order'] = corr_order
                 par['corr_range'] = 100
 
                 par['zstart'] = inversion_start_depth             

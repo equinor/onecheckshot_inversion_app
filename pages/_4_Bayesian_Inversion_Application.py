@@ -18,6 +18,8 @@ from bayesian.td_tool.runBayesCsc_2 import Bayesian_Inference
 from bayesian.td_tool.bayes_csc import getTime, getDrift
 from bayesian.td_tool.td_lib import getVel
 import time
+import lasio
+#from bayesian.td_tool.export_las import to_las
 #from pages._3_Checkshot_Data import get_data, filter_data
 plots_posteriori = False
 st.write('# Bayesian Inversion')
@@ -51,20 +53,29 @@ else:
 with col2:
     st.write('## Select parameters for Bayesian Inversion')
     st.write(f"On section '3 Data Visualization' you selected well {uwi}. You can now select parameters to run the bayesian inversion yourself.")
-    col1_1, col1_2, col1_3 = st.columns(3)
+    col1_1, col1_2 = st.columns(2)
     with col1_1:
-        
-        apply_covariance = st.radio(
-            "Select Depth Covariance:",
-            options=["Do not apply", "Apply"],
-        )
+        decimation_step = st.text_input(f"Define a decimation step. The lowest the value more accurate your inversion will be.", 10)
+        decimation_step = int(decimation_step)
     with col1_2:
         inversion_start_depth = st.text_input(f"Assign from which depth the inversion is starting from..\
                                                 Standard value for well {uwi} is seabed depth: {float(df_checkshot[(df_checkshot['depth_source'] == 'seabed from smda') | (df_checkshot['depth_source'] == 'seabed detected')]['tvd_ss'])} m", float(df_checkshot[(df_checkshot['depth_source'] == 'seabed from smda') | (df_checkshot['depth_source'] == 'seabed detected')]['tvd_ss']))
         inversion_start_depth = float(inversion_start_depth)
-    with col1_3:
-        decimation_step = st.text_input(f"Define a decimation step. The lowest the value more accurate your inversion will be.", 10)
-        decimation_step = int(decimation_step)
+
+    st.write("### Exponential Correlation Matrix")
+    st.write("An exponential correlation matrix is a mathematical tool used to model spatial autocorrelation between data points. In the context of Bayesian inversion, this matrix is employed to introduce spatial correlation into the prior model. This correlation assumes that closely spaced depth samples exhibit higher correlation than those that are more distant, with the correlation decaying exponentially as the distance increases.")
+    col1_3_1, col1_3_2 = st.columns(2)
+    with col1_3_1:
+        apply_covariance = st.radio(
+            "Select Depth Covariance:",
+            options=["Do not apply", "Apply"],
+        )
+    with col1_3_2:
+        if apply_covariance == 'Apply':
+            corr_order = st.text_input(f"Define a Correlation order. It determines the shape of the correlation function. A higher correlation order implies a slower decay in correlation as the distance between data points increases, indicating stronger correlation between more distant points.", 1.8)
+            corr_order = float(corr_order)
+        else:
+            corr_order = None
 
     st.write('### Definition of uncertainties')
     st.write('Uncertainty associated to Sonic log shall be higher than the one associated to Checkshot Data')
@@ -124,55 +135,63 @@ with col1:
     st.write("Figure x. Checkshot velocities, estimated interval velocities with confidence bounds (gray), unconstrained classical\
              Dix inversion (black), and trend curve (gray).")
 
+if "button_clicked" not in st.session_state:
+    st.session_state.button_clicked = False
+if "button_clicked2" not in st.session_state:
+    st.session_state.button_clicked2 = False
 
+def callback():
+    st.session_state.button_clicked = True
+def callback2():
+    st.session_state.button_clicked2 = True
+
+
+
+from streamlit_extras.stateful_button import button
 
 with col2:
-    #st.button("Reset", type="primary")
-    if st.checkbox("Run Bayesian Dix Inversion"):
+    st.session_state.button_clicked = False
+    if (st.button("Run Bayesian Dix Inversion") or st.session_state.button_clicked2):
+        st.session_state.button_clicked = True
+        st.session_state.button_clicked2 = False
         start_time = time.time()
-    #if st.button("Run Bayesian Dix Inversion"):
         clas = Bayesian_Inference()
-        df_well, td_z, td_t, ww, water_depth, water_velocity, C, std_total_depth = clas.run(df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, inversion_start_depth, decimation_step, uwi)
+        df_well, td_z, td_t, ww, water_depth, water_velocity, C, std_total_depth = clas.run(df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, corr_order, inversion_start_depth, decimation_step, uwi)
         end_time = time.time()
         elapsed_time = end_time - start_time
         st.write(f"Time taken to run Bayesian Dix Inversion: {elapsed_time:.2f} seconds")
+        well_z = df_well['TVDMSL'].values
+        well_vp_ext = df_well['VP_EXT'].values
+        well_vp = df_well['VP_BAYES'].values
+        
+        td_vp = getVel(td_z, td_t)
+
+        td_df = pd.DataFrame({'depth':td_z,'twt':td_t,'vp':td_vp})
+        td_df = td_df.dropna()
+        td_z = td_df['depth'].values
+        td_t = td_df['twt'].values
+        td_vp = td_df['vp'].values
+
+
+        well_t_ext = getTime(well_z, well_vp_ext)
+
+        well_t = getTime(well_z, well_vp)
+
+        td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = getDrift(td_z, td_t, well_z, well_t_ext)  
+
+        td_drift_t, td_drift_z, well_drift_t, well_drift_z = getDrift(td_z, td_t, well_z, well_t)    
+        #st.write(well_t_ext)
+
+        yr = [np.max(np.union1d(well_z, td_z)) * 1.1, 0]
         plots_posteriori = True        
     else:
         st.write("Inversion not running.")
     
 
 
-
-
 #df_checkshot, df_sonic, df_merged = filter_data(df_checkshot, df_sonic, raw_cks_df, uwi)
 
-if plots_posteriori == True:
-
-    well_z = df_well['TVDMSL'].values
-    well_vp_ext = df_well['VP_EXT'].values
-    well_vp = df_well['VP_BAYES'].values
-    
-    td_vp = getVel(td_z, td_t)
-
-    td_df = pd.DataFrame({'depth':td_z,'twt':td_t,'vp':td_vp})
-    td_df = td_df.dropna()
-    td_z = td_df['depth'].values
-    td_t = td_df['twt'].values
-    td_vp = td_df['vp'].values
-
-
-    well_t_ext = getTime(well_z, well_vp_ext)
-
-    well_t = getTime(well_z, well_vp)
-
-    td_drift_t_ext, td_drift_z_ext, well_drift_t_ext, well_drift_z_ext = getDrift(td_z, td_t, well_z, well_t_ext)  
-
-    td_drift_t, td_drift_z, well_drift_t, well_drift_z = getDrift(td_z, td_t, well_z, well_t)    
-    #st.write(well_t_ext)
-
-    yr = [np.max(np.union1d(well_z, td_z)) * 1.1, 0]
-
-
+if (st.session_state.button_clicked == True) or (st.session_state.button_clicked2 == True):
 
     st.write("## Velocity plots")
     col1_plot, col2_plot, col3_plot, col4_plot = st.columns(4)
@@ -249,7 +268,7 @@ if plots_posteriori == True:
         xmax = np.max(xx) + 10
         fig4.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed'))
 
-        fig4.add_vline(x=0, line_width=1, line_color="black")
+        fig4.add_vline(x=0, line_width=0.5, line_color="black")
 
         fig4.update_layout(
         title=f'Velocity Difference',
@@ -328,35 +347,43 @@ if plots_posteriori == True:
 
     import plotly.figure_factory as ff
     with col2:
-        if st.button("Display advanced parameters"):
-            col2_5, col2_6 = st.columns(2)
-            std_total_depths = [[float(value) for value in std_total_depth]]
-            df_standard_deviation_vel = pd.DataFrame({"std":std_total_depth,"tvd_ss":well_z})   
-            with col2_5:
-                fig5 = go.Figure()
-                fig5.add_trace(go.Scatter(x=df_standard_deviation_vel["std"],y=df_standard_deviation_vel['tvd_ss'],name="Standard Deviation Velocity",line_color="blue"))
+            if st.button("Display Advanced Parameters", on_click=callback2):
+                col2_5, col2_6 = st.columns(2)
+                std_total_depths = [[float(value) for value in std_total_depth]]
+                df_standard_deviation_vel = pd.DataFrame({"std":std_total_depth,"tvd_ss":well_z})   
+                with col2_5:
+                    fig5 = go.Figure()
+                    fig5.add_trace(go.Scatter(x=df_standard_deviation_vel["std"],y=df_standard_deviation_vel['tvd_ss'],name="Standard Deviation Velocity",line_color="blue"))
 
-                fig5.update_traces(connectgaps=True) 
-                fig5.update_layout(
-                xaxis_title="Standard Deviation (m/s)",
-                yaxis_title='TVDSS (m)',
-                autosize=False,
-                width=400,
-                height=800,
-                showlegend=True,
-                yaxis=dict(autorange='reversed'))        
-                st.plotly_chart(fig5)
-                st.write("Figure x. Standard deviation from time-depth relationship a posteriori along depth.")
-            with col2_6:
-                
-                fig = px.box(df_standard_deviation_vel["std"])
-                st.plotly_chart(fig)
-                st.write("Figure x. Boxplot for the standard deviation of velocity posteriori. This is a direct measure of the uncertainty associated to the time-depth relationship")    
-                #fig, ax = plt.subplots()
+                    fig5.update_traces(connectgaps=True) 
+                    fig5.update_layout(
+                    xaxis_title="Standard Deviation (m/s)",
+                    yaxis_title='TVDSS (m)',
+                    autosize=False,
+                    width=400,
+                    height=400,
+                    #showlegend=True,
+                    yaxis=dict(autorange='reversed'))        
+                    st.plotly_chart(fig5)
+                    st.write("Figure x. Standard deviation from time-depth relationship a posteriori along depth.")
+                with col2_6:
+            
+                    fig6 = px.box(df_standard_deviation_vel["std"])
+                    fig6.update_layout(
+                    xaxis_title="Standard Deviation (m/s)",
+                    yaxis_title='TVDSS (m)',
+                    autosize=False,
+                    width=400,
+                    height=400,
+                    #showlegend=True,
+                    yaxis=dict(autorange='reversed'))                  
+                    st.plotly_chart(fig6)
+                    st.write("Figure x. Boxplot for the standard deviation of velocity posteriori. This is a direct measure of the uncertainty associated to the time-depth relationship")    
+                    #fig, ax = plt.subplots()
 
-                #ax.hist(df_standard_deviation_vel["std"])
-                #st.plotly_chart(fig)
-                
-                
-        else:
-            pass    
+                    #ax.hist(df_standard_deviation_vel["std"])
+                    #st.plotly_chart(fig)
+            else:
+                pass
+st.write("### Export Las")
+#to_las("output", td_z, td_t, None)

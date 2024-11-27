@@ -383,8 +383,8 @@ def getDefaultPar():
     # spatial correlation      
     par['apply_corr'] = 1
     par['corr_order'] = 1.8
-    par['corr_range'] = np.finfo(float).eps
     
+    par['corr_range'] = np.finfo(float).eps
     # other parameters
     par['istep_bayes'] = 10 # sampling step used to speed up bayesian part        
     par['zstart'] = 0 # start depth for bayesian inversion

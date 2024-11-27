@@ -1,12 +1,59 @@
 import numpy as np
 import pandas as pd
 import re
-import openpyxl
-#feature is a variable passed within FME, this is just to bypass this requirement
-feature = 'f'
+import segyio
+
+
+def parse_trace_headers(segyfile, n_traces):
+    '''
+    Parse the segy file trace headers into a pandas dataframe.
+    Column names are defined from segyio internal tracefield
+    One row per trace
+    '''
+    # Get all header keys
+    headers = segyio.tracefield.keys
+    # Initialize dataframe with trace id as index and headers as columns
+    df = pd.DataFrame(index=range(1, n_traces + 1),
+                      columns=headers.keys())
+    # Fill dataframe with all header values
+    for k, v in headers.items():
+        df[k] = segyfile.attributes(v)[:]
+    return df
+
+def parse_text_header(segyfile):
+    '''
+    Format segy text header into a readable, clean dict
+    '''
+    raw_header = segyio.tools.wrap(segyfile.text[0])
+    # Cut on C*int pattern
+    cut_header = re.split(r'C ', raw_header)[1::]
+    # Remove end of line return
+    text_header = [x.replace('\n', ' ') for x in cut_header]
+    text_header[-1] = text_header[-1][:-2]
+    # Format in dict
+    clean_header = {}
+    i = 1
+    for item in text_header:
+        key = "C" + str(i).rjust(2, '0')
+        i += 1
+        clean_header[key] = item
+    return clean_header
+
+feature = "f"
 def processFeature(feature):
     pass
 
+def is_txt_file(filename):
+  """Verifies if a given filename ends with the .txt extension.
+
+  Args:
+    filename: The filename to check.
+
+  Returns:
+    True if the filename ends with .txt, False otherwise.
+  """
+
+  return filename.endswith('.txt')
 # class to rename the header names
 class Rename_functions:
     # Dictionary to rename file headers
@@ -116,45 +163,66 @@ class FeatureProcessor():
                 )
                 pass
         return df
-    
-    def extract_data(self, filepath, text_or_number):
-        if filepath.lower().endswith('.txt'):
+
+    # Function to identify text features in the text
+    def read_text(self, filepath):
+        if is_txt_file(filepath) is True:
             try:
                 with open(filepath, 'r') as file:
                     contents = file.read()
+                    print(contents)
             except FileNotFoundError:
                 print("File not found.")
             except IOError:
                 print("An I/O error occurred.")
             my_list = contents.split("\n")[1:]
-            #it was seen that many .txt files contained Measured Depth (MSL) that were not right. It doesn't apply for Norway.
             string_list = [test.replace("\\t", " ").replace("NaN", "").replace("Measured Depth (MSL)", "None").replace("Measured Depth","MD").replace(",","  ") for test in my_list]
-        elif filepath.lower().endswith('.asc'):
+        elif filepath.lower().endswith('.asc'): 
             try:
                 df = pd.read_csv(filepath, header=None)
                 if pd.errors.ParserError:
                     df = pd.read_csv(filepath, header=None, on_bad_lines="skip").drop_duplicates(ignore_index=True)
             except Exception:
-                #Sometimes there are different encodings and the file cannot be read with "utf-8" encoding.
                 df = self.encodings(filepath=filepath).drop_duplicates(ignore_index=True)
                 if df is None:
                     print(filepath + " - File cannot be red")
             my_list = df.to_string(index=False).split("\n")[1:]
             string_list = [test.replace("\\t", " ").replace("NaN", "") for test in my_list]
-            
         elif filepath.lower().endswith('.xlsx'):
             df = pd.read_excel(filepath, header=None)
             my_list = [','.join(str(x) for x in row) for row in df.values]
-            if text_or_number == 'text':
-                string_list = [test.replace(",","  ").replace("nan", ".") for test in my_list]
-            elif text_or_number == 'number':
-                string_list = [test.replace(",","  ").replace("nan", "-999.25") for test in my_list]
-        return string_list
+            #string_list = [test.replace(",","  ").replace("nan", "-999.25") for test in my_list]
+            string_list = [test.replace(",","  ").replace("nan", ".") for test in my_list]
+        elif filepath.lower().endswith('.sgy'):
+            with segyio.open(filepath, ignore_geometry=True) as f:
+                
+                # Get basic attributes
+                n_traces = f.tracecount
+                sample_rate = segyio.tools.dt(f) / 1000
+                n_samples = f.samples.size
+                twt = f.samples
+                data = f.trace.raw[:]  # Get all data into memory (could cause on big files)
+                # Load headers
+                bin_headers = f.bin
+                text_headers = parse_text_header(f)
+                trace_headers = parse_trace_headers(f, n_traces)
+                f'N Traces: {n_traces}, N Samples: {n_samples}, Sample rate: {sample_rate}ms'
+                import matplotlib.pyplot as plt
+                    # Plot
+                plt.style.use('ggplot')  # Use ggplot styles for all plotting
+                vm = np.percentile(data, 99)
+                fig = plt.figure(figsize=(18, 8))
+                ax = fig.add_subplot(1, 1, 1)
+                extent = [1, n_traces, twt[-1], twt[0]]  # define extent
+                ax.imshow(data.T, cmap="RdBu", vmin=-vm, vmax=vm, aspect='auto', extent=extent)
+                ax.set_xlabel('CDP number')
+                ax.set_ylabel('TWT [ms]')
+                ax.set_title(f'{f}')
+                plt.show()
+                embed()
 
-    # Function to identify text features in the text
 
-    def read_text(self, filepath):
-        string_list = self.extract_data(filepath=filepath, text_or_number="text")
+        
         # It uses regular expression (regex) to check if there are at least two headers. There can be units within these headers
         regex_pattern = r"(?P<GP1>TVD SS|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL)\)?(?P<GP1_unit>\s?\(?(m|s|ms)?\)?)?\s+\(?(?P<GP2>TVD SS|None|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL)\)?(?P<GP2_unit>\s?\(?(m|s|ms)\)?)?\s?\(?(?P<GP3>TVD SS|TVDSS|Time|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL)?"
         match_string = ""
@@ -178,7 +246,6 @@ class FeatureProcessor():
                         pass
             else:
                 pass
-    
 
         # Regex to idenfity if there are lines with units alone
         for string in string_list:
@@ -203,7 +270,7 @@ class FeatureProcessor():
                     pass
             else:
                 pass
-        
+
         # It tries to identify if there are units within parenthesis or brackets together with the header
         if len(match_string_units) == 0:
             match_string_units = []
@@ -314,9 +381,6 @@ class FeatureProcessor():
         try:
             if match_depth_elevation_number is not None:
                 number = float(match_depth_elevation_number)
-                #if depth of reference is zero it means that the reference is not the kelly bushing. Then we set it to None and take the value from SMDA later in the
-                #workflow. If it is higher than 100 it means that it is not kelly bushing either, and we set it to None.
-                #This is why is risky to retrieve data from onshore wells, because the reference of elevation changes and it is generally not well documented.
                 if number == 0 or number > 100:
                     match_depth_elevation_number = None
         except ValueError:
@@ -324,7 +388,7 @@ class FeatureProcessor():
             if match_depth_elevation_number == '0':
                 match_depth_elevation_number = None
 
-        #if there was not a match for depth elevation unit or depth of reference datum, these will be set to None
+            
         if "match_depth_elevation_unit" not in locals():
             match_depth_elevation_unit = None
         else:
@@ -350,7 +414,6 @@ class FeatureProcessor():
         for i in range(0, len(match_string_units)):
             match_string_units[i] = match_string_units[i].lower()
             match_parenthesis = re.findall(r"\(([^)]+)\)", match_string_units[i])
-            #If units are within parenthesis or brackets, it will take them out
             if match_parenthesis:
                 match_string_units[i] = match_parenthesis[0]
             else:
@@ -360,10 +423,10 @@ class FeatureProcessor():
                 match_string_units[i] = match_key[0].lower()
             else:
                 pass
-
-        # It puts all text data in one dictionary
+        # It puts everything in one dictionary
         dict_match["match_header"] = match_string
         dict_match["match_units"] = match_string_units
+        
         dict_match["depth_elevation_number"] = match_depth_elevation_number
         dict_match["depth_elevation_unit"] = match_depth_elevation_unit
         dict_match["depth_reference_datum_text"] = depth_reference_datum_text
@@ -379,7 +442,36 @@ class FeatureProcessor():
 
     def read_data(self, filepath):
         # Tries to extract numeric columns
-        string_list = self.extract_data(filepath=filepath, text_or_number="number")      
+        
+        if is_txt_file(filepath) is True:
+            try:
+                with open(filepath, 'r') as file:
+                    contents = file.read()
+                    print(contents)
+            except FileNotFoundError:
+                print("File not found.")
+            except IOError:
+                print("An I/O error occurred.")
+            my_list = contents.split("\n")[1:]
+            string_list = [test.replace("\\t", " ").replace("NaN", "").replace("Measured Depth (MSL)", "None").replace("Measured Depth","MD").replace(",","  ") for test in my_list]
+        elif filepath.lower().endswith('.asc'): 
+            try:
+                df = pd.read_csv(filepath, header=None)
+                if pd.errors.ParserError:
+                    df = pd.read_csv(filepath, header=None, on_bad_lines="skip").drop_duplicates(ignore_index=True)
+            except Exception:
+                df = self.encodings(filepath=filepath).drop_duplicates(ignore_index=True)
+                if df is None:
+                    print(filepath + " - File cannot be red")
+            my_list = df.to_string(index=False).split("\n")[1:]
+            string_list = [test.replace("\\t", " ").replace("NaN", "") for test in my_list]
+        elif filepath.lower().endswith('.xlsx'):
+            df = pd.read_excel(filepath, header=None)
+            my_list = [','.join(str(x) for x in row) for row in df.values]
+            #string_list = [test.replace(",","  ").replace("nan", "-999.25") for test in my_list]
+            string_list = [test.replace(",","  ").replace("nan", "-999.25") for test in my_list]
+        
+        #string_list = [test.replace("\\t", " ").replace("NaN", "") for test in my_list]
         
         regex_pattern_number = r"[0-9.]+\s+[0-9.]+\s*[0-9.]?"
         data = []
@@ -395,7 +487,7 @@ class FeatureProcessor():
                 data.append(match_string)
             else:
                 pass
-
+        
         return data
 
     def verification(self, data, regex):
@@ -416,14 +508,11 @@ class FeatureProcessor():
 
         return dictionary
 
-    def input(self, filepath):  # Main starting point
+    def input(self):  # Main starting point
         #filepath = feature.getAttribute("file_path")
-        filepath = filepath
-
         try:
             qc_description = list()
             # Import headers and numeric columns
-
             dict_match = self.read_text(filepath=filepath)
             
             regex_units = dict_match["match_units"]
@@ -443,13 +532,14 @@ class FeatureProcessor():
                 regex=dict_match["match_header"], data=data
             )
             
+            
             renamer = Rename_functions()
             # It will rename all the headers
             for key, value in dict_verified.items():
                 depth_reference_datum_header = renamer.depth_reference_datum(key)
                 if depth_reference_datum_header is not None:
                     break
-            # The code extracts depth reference datum both from the text and header. It will give preference to the depth reference in header.
+            # The code extracts depth reference datum both from the text and header. It will give preference to th depth reference in header.
             if (
                 depth_reference_datum_header is not None
                 and regex_depth_reference_datum_text is not None
@@ -482,6 +572,7 @@ class FeatureProcessor():
                 depth_reference_point = None
             #feature.setAttribute("depth_reference_point", depth_reference_point)
             # It will rename all the headers
+
             for key, value in dict_verified.items():
                 key_renamed = renamer.rename_key(key)
                 dict_verified = {
@@ -503,7 +594,7 @@ class FeatureProcessor():
             except Exception:
                 print(f"{filepath} - Headers were not renamed")
                 pass
-            #Now that the header and data is already matched, it will be tried to match the units
+
             if len(dict_match["match_units"]) > 0:
                 units = self.confirm_units(dict_match)
             else:
@@ -537,6 +628,8 @@ class FeatureProcessor():
                         )
                     )
                     dict_units["TWT"] = units.get(measure, None)
+
+
 
             
             if len(dict_header.keys()) >= 2:
@@ -580,7 +673,6 @@ class FeatureProcessor():
             qc_description = (
                 str(qc_description).replace("[", "").replace("'", "").replace("]", "")
             )
-
             #feature.setAttribute("qc_description", qc_description)
         except Exception as e:
             print(f"{filepath} cannot be read. Reason: {e}")
@@ -593,7 +685,7 @@ class FeatureProcessor():
         """
         pass
 from IPython import embed
-filepath = 'G:\\Sub_Appl_Data\\WellDB\\NO\\wells\\0034\\NO 34-8-A-5 AH\\07.Borehole_Seismic\\VSP_REPORT1_ENCL5.ASC'
+filepath = 'G:\\Sub_Appl_Data\\WellDB\\NO\\wells\\7226\\NO 7226-11-1\\07.Borehole_Seismic\\1063_2.SGY'
 feature_processor = FeatureProcessor()
-feature_processor.input(filepath)
+feature_processor.input()
 
