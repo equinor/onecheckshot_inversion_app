@@ -17,9 +17,11 @@ import os
 sys.path.append(os.getcwd())
 from bayesian.td_tool.bayes_csc import getTime
 from bayesian.td_tool.td_lib import getVel
+#import bayesian.td_tool.ELS_log
 import pandas as pd
 from bayesian.td_tool.data_management_smda.connect_smda import Connection_Database, get_connect_database, generate_df
 from scipy.interpolate import interp1d
+from bayesian.td_tool.ELS_log import Connection_ELS_LOG
 
 
 #raw_cks_df, df_checkshot, df_sonic = get_data()
@@ -55,6 +57,7 @@ with col1:
     df = df[(df['source_file'] == selected_source) & (df['md_increasing'] == 'true')]
     df.sort_values(by=['md'], ascending=[True], inplace=True)
     st.write(df[['md', 'tvd', 'tvd_ss','depth_source','depth_reference_elevation', 'time', 'average_velocity', 'average_velocity_qc', 'interval_velocity', 'mae_soniclog_checkshot','qc_description']])
+
 
 with col2:
 
@@ -102,7 +105,7 @@ with col2:
 
     except Exception as e:
         df_filtered = pd.DataFrame()
-        df_filtered['source'] = np.NaN
+        df_filtered['source'] = np.nan
 
     #selected_source_welllog = st.selectbox(f"Select Sonic Log File", options=df_filtered['source'].unique())
     st.write(df_filtered)    

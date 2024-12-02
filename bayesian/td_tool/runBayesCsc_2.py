@@ -78,7 +78,7 @@ class Bayesian_Inference():
         #water_velocity = float(df_checkshot[df_checkshot['depth_source']=='seabed from smda']['average_velocity'].iloc[0]) 
 
 
-        df_sonic = df_sonic[['tvd_ss','vp']].dropna(subset='vp')
+        df_sonic = df_sonic[['md','tvd_ss','vp']].dropna(subset='vp')
 
         try:
 
@@ -120,6 +120,7 @@ class Bayesian_Inference():
 
             # get log data
             
+            well_z_md = df_sonic['md'].values.astype(float)
             well_z = df_sonic['tvd_ss'].values.astype(float)
             well_vp = df_sonic['vp'].values.astype(float)
 
@@ -127,8 +128,10 @@ class Bayesian_Inference():
             if len(well_z) >= 2:
                 
                 # create output dataframe
-                df_well = pd.DataFrame({'TVDMSL': well_z, 
+                df_well = pd.DataFrame({'md': well_z_md,
+                                        'TVDMSL': well_z, 
                                         'VP_IN': well_vp})
+                print(df_well)
             else:
                 print('ERROR: empty well log data - skipping well')
                 runWell = 0 # skip this well

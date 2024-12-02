@@ -9,7 +9,6 @@ from collections import namedtuple
 import time
 import numpy as np
 import pandas as pd
-import bruges as br
 import matplotlib.pyplot as plt
 from scipy import signal
 from scipy.interpolate import interp1d

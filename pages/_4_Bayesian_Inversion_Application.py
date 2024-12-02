@@ -19,7 +19,7 @@ from bayesian.td_tool.bayes_csc import getTime, getDrift
 from bayesian.td_tool.td_lib import getVel
 import time
 import lasio
-#from bayesian.td_tool.export_las import to_las
+from bayesian.td_tool.export_las import to_las, resample_log
 #from pages._3_Checkshot_Data import get_data, filter_data
 plots_posteriori = False
 st.write('# Bayesian Inversion')
@@ -90,6 +90,7 @@ with col2:
 with col1:
     fig2 = go.Figure()
     fig2.add_trace(go.Line(x=df_checkshot['interval_velocity'],y=df_checkshot['tvd_ss'], line_color='red', name='Vp Checkshot', line_shape='hv'))
+    #fig2.add_trace(go.Scatter(x=1e3 * td_t, y=td_z, mode='markers', line=dict(color='red'),  name='TWT Checkshot'))
 
     try:
         #std_sonic = st.slider("Standard deviation: Vp", 400, 600)
@@ -144,10 +145,12 @@ def callback():
     st.session_state.button_clicked = True
 def callback2():
     st.session_state.button_clicked2 = True
+def callback3():
+    st.session_state.button_clicked = True
+    st.session_state.button_clicked2 = True
 
 
 
-from streamlit_extras.stateful_button import button
 
 with col2:
     st.session_state.button_clicked = False
@@ -156,10 +159,14 @@ with col2:
         st.session_state.button_clicked2 = False
         start_time = time.time()
         clas = Bayesian_Inference()
+        st.write(df_sonic.columns)
         df_well, td_z, td_t, ww, water_depth, water_velocity, C, std_total_depth = clas.run(df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, corr_order, inversion_start_depth, decimation_step, uwi)
         end_time = time.time()
         elapsed_time = end_time - start_time
         st.write(f"Time taken to run Bayesian Dix Inversion: {elapsed_time:.2f} seconds")
+        
+        #well_z_md = df_well['md'].values
+        st.write(df_well)
         well_z = df_well['TVDMSL'].values
         well_vp_ext = df_well['VP_EXT'].values
         well_vp = df_well['VP_BAYES'].values
@@ -168,10 +175,12 @@ with col2:
 
         td_df = pd.DataFrame({'depth':td_z,'twt':td_t,'vp':td_vp})
         td_df = td_df.dropna()
+        td_md = df_checkshot['md']
         td_z = td_df['depth'].values
         td_t = td_df['twt'].values
         td_vp = td_df['vp'].values
-
+        st.write(len(td_md))
+        st.write(len(td_z))
 
         well_t_ext = getTime(well_z, well_vp_ext)
 
@@ -361,7 +370,7 @@ if (st.session_state.button_clicked == True) or (st.session_state.button_clicked
                     yaxis_title='TVDSS (m)',
                     autosize=False,
                     width=400,
-                    height=400,
+                    height=600,
                     #showlegend=True,
                     yaxis=dict(autorange='reversed'))        
                     st.plotly_chart(fig5)
@@ -374,9 +383,9 @@ if (st.session_state.button_clicked == True) or (st.session_state.button_clicked
                     yaxis_title='TVDSS (m)',
                     autosize=False,
                     width=400,
-                    height=400,
-                    #showlegend=True,
-                    yaxis=dict(autorange='reversed'))                  
+                    height=600,
+                    #showlegend=True
+                    )                  
                     st.plotly_chart(fig6)
                     st.write("Figure x. Boxplot for the standard deviation of velocity posteriori. This is a direct measure of the uncertainty associated to the time-depth relationship")    
                     #fig, ax = plt.subplots()
@@ -385,5 +394,12 @@ if (st.session_state.button_clicked == True) or (st.session_state.button_clicked
                     #st.plotly_chart(fig)
             else:
                 pass
+from scipy.interpolate import interp1d    
 st.write("### Export Las")
-#to_las("output", td_z, td_t, None)
+if st.button("Generate LAS file", on_click=callback3):
+    
+    st.write(well_z)
+    x=well_vp_ext
+    x=well_vp
+    to_las(uwi=uwi,output_file="test", depth_in=well_z, vp_input=well_vp_ext,vp_output=well_vp)
+    #to_las("output", td_z, td_t, None)

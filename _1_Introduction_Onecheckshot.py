@@ -5,7 +5,7 @@ from pathlib import Path
 import plotly.express as px
 from IPython import embed
 import matplotlib.pyplot as plt
-
+#py -m streamlit run _1_Introduction_Onecheckshot.py
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
     page_title='OneCheckshot',
