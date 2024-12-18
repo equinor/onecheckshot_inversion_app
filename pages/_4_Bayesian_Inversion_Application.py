@@ -346,6 +346,14 @@ if (st.session_state.button_clicked == True) or (st.session_state.button_clicked
                 pass
 from scipy.interpolate import interp1d  
 st.write("### Export Las")
+col1, col2 = st.columns(2)
+with col1:
+    answer = st.radio("Do you want to apply step in depth?:", ("True", "False"))
+    if answer == "True":
+        depth_step = st.text_input(f"Depth step", 0.2)
+        depth_step = float(depth_step)
+    else:
+        depth_step = False
 
 col1, col2 = st.columns(2)
 with col1:
@@ -367,7 +375,8 @@ with col1:
             df_well = df_well.dropna(subset=['md'])
             st.write(f"Trajectory in SMDA for well {uwi} goes from MD:{df_wellbore['md'].min()}m to MD:{df_wellbore['md'].max()}m and MD values were interpolated from TVDSS for this interval")
             st.write(df_well)
-            to_las(uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['md']), vp_input=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']))
+
+            to_las(depth_path="MD", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
             st.write(f"Well {uwi} correctly exported as LAS file")
         else:
             st.write("### No MD could be found for this well")
@@ -376,6 +385,7 @@ with col1:
 
 with col2:
     if st.button("Generate LAS file in TVDSS", on_click=callback3):
+        to_las(depth_path="TVDSS", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['TVDMSL']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']))
         
 
         #df_well = resample_tvdss_md(df_well, df_wellbore)

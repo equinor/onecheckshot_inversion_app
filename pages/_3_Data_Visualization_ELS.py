@@ -143,7 +143,7 @@ with col1:
         yaxis_title='TVDSS (m)',
         autosize=False,
         width=800,
-        height=900,
+        height=800,
         yaxis_range=[max(td["tvd_ss"]), min(td["tvd_ss"])],
         )
         st.plotly_chart(fig1_1)
@@ -168,7 +168,7 @@ with col1:
         xaxis=dict(tickvals=[0, 1, 2, 3, 4, 5], ticktext=['MD', 'TVDSS', 'Time', 'Average vel', 'Trajectory']),
         autosize=False,
         width=10,
-        height=900,
+        height=800,
         yaxis_range=[max(td["tvd_ss"]), min(td["tvd_ss"])],
         showlegend=False
         )
@@ -184,7 +184,7 @@ with col2:
         yaxis_title='TVDSS (m)',
         autosize=False,
         width=500,
-        height=900,
+        height=800,
         yaxis_range=[max(td["tvd_ss"]), min(td["tvd_ss"])])
         
         st.plotly_chart(fig2)
@@ -333,7 +333,7 @@ except:
     pass
 fig.update_xaxes(title_text="Two-way Travel Time (TWT) (ms)", row=1, col=1)
 fig.update_xaxes(title_text="Interval Velocity (m/s)", row=1, col=2)
-fig.update_layout(height=1300, 
+fig.update_layout(height=800, 
                   width=1300, 
                   yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])])
 st.plotly_chart(fig, use_container_width=True)

@@ -11,31 +11,40 @@ def resample_log(zz, val, zz_out):
     ff = interp1d(zz, val, kind="next", bounds_error=False, fill_value=np.nan)
     return ff(zz_out)
 
-def to_las(uwi,output_file, depth_in,vp_input,vp_output,depth_step=0.1,null_value=-999.25):
+def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output,depth_step,null_value=-999.25):
 
     # create output depth curve
-    depth = np.arange(depth_in[0], depth_in[-1] + depth_step, depth_step)
-    depth = depth[depth <= depth_in[-1]]
+    if depth_step is not False:
+        depth = np.arange(depth_in[0], depth_in[-1] + depth_step, depth_step)
+        depth = depth[depth <= depth_in[-1]]
+    else:
+        depth = depth_in
     
     # initiate LAS-file
     las = lasio.LASFile()
     # header values
     las.well.WELL.value = uwi
+
     las.well["ELEV"] = lasio.HeaderItem(
         "ELEV", unit="m", value="0", descr="SURFACE ELEVATION"
     )
 
     # values
-    log_name = ["vp_input", "vp_output"]
-    log_unit = ["m/s", "m/s"]
+    log_name = ["vp_input", "vp_ext","vp_output"]
+    log_unit = ["m/s", "m/s", "m/s"]
     log_descr = [
         "Vp_Input",
+        "Vp_Extended",
         "Vp_Output_Bayesian"
     ]
     nlog = len(log_name)
 
     # add depth curves to LAS
-    las.append_curve("DEPTH", depth, unit="m", descr="Measured Depth")
+    if depth_path == "MD":
+        las.append_curve("DEPTH", depth, unit="m", descr="Measured Depth")
+    elif depth_path == "TVDSS":
+        las.append_curve("DEPTH", depth, unit="m", descr="True Vertical Depth SubSea")
+
     #las.add_curve("TVD", depth, unit="m", descr="True Vertical Depth KB")
     #las.add_curve("TVDMSL", depth, unit="m", descr="True Vertical Depth Mean Sea Level")
 

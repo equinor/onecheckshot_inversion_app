@@ -54,6 +54,6 @@ def load_els_data(df_sonic, selected_log_curve):
     except Exception as e:
         df_filtered = pd.DataFrame()
         df_filtered['source'] = np.nan
-        return df_filtered    
+        return df_filtered 
 
 
