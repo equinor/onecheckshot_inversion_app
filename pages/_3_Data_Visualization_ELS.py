@@ -23,7 +23,7 @@ from bayesian.td_tool.data_management_smda.connect_smda import Connection_Databa
 from scipy.interpolate import interp1d
 from bayesian.td_tool.ELS_log import Connection_ELS_LOG, load_els_data
 
-
+st.set_page_config(layout="wide")
 #raw_cks_df, df_checkshot, df_sonic = get_data()
 host, dbname, user, password, sslmode = get_connect_database()
 connect = Connection_Database(host,dbname,user,password,sslmode)
@@ -43,19 +43,25 @@ st.write(f"Well selected: {uwi}")
 
 host, dbname, user, password, sslmode = get_connect_database()
 
-columns = 'md, tvd, tvd_ss, depth_reference_elevation, depth_source, time, source_file, unique_wellbore_identifier, average_velocity, interval_velocity, qc_description, md_increasing, tvd_ss_increasing, time_increasing, average_velocity_qc, trajectory_checked, mae_soniclog_checkshot, comparison_sonic_log_qc, preference_checkshotfile'
+columns = 'md, md_unit, tvd, tvd_ss, tvd_unit, depth_reference_elevation, depth_source, time, time_unit, source_file, unique_wellbore_identifier, average_velocity, interval_velocity, qc_description, md_increasing, tvd_ss_increasing, time_increasing, average_velocity_qc, trajectory_checked, mae_soniclog_checkshot, comparison_sonic_log_qc, preference_checkshotfile'
 df = generate_df(host, dbname, user, password, sslmode, columns, database_checkshot, uwi)
 
-df.loc[df['depth_source']=='seabed from smda','average_velocity'] = 1478.2
-df.loc[df['depth_source']=='seabed from smda','interval_velocity'] = 1478.2
+df.loc[df['depth_source'].str.contains('sealevel', case=False), 'interval_velocity'] = 1479
+df.loc[df['depth_source'].str.contains('sealevel', case=False), 'average_velocity'] = 1479
+df.loc[df['depth_source'].str.contains('seabed', case=False), 'interval_velocity'] = 1479
+df.loc[df['depth_source'].str.contains('seabed', case=False), 'average_velocity'] = 1479
+seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
 
+
+#seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
+#st.write(type(seabed))
 col1, col2 = st.columns(2)
 with col1:
     selected_source = st.selectbox(f"Select Checkshot File", options=df['source_file'].unique())
 
     df = df[(df['source_file'] == selected_source) & (df['md_increasing'] == 'true')]
     df.sort_values(by=['md'], ascending=[True], inplace=True)
-    st.write(df[['md', 'tvd', 'tvd_ss','depth_source','depth_reference_elevation', 'time', 'average_velocity', 'average_velocity_qc', 'interval_velocity', 'mae_soniclog_checkshot','qc_description']])
+    
 
 
 with col2:
@@ -63,26 +69,48 @@ with col2:
 
     if "connection_ELS" not in st.session_state:
         st.session_state.connection_ELS = False
-    try:
+    if selected_source_well_log == 'LFP':    
+        try:
+            @st.cache_data
+            def load_els_log(uwi):
+                connection_els = Connection_ELS_LOG()
+                df = connection_els.kusto_query_LFP(uwi)
+                st.session_state.connection_ELS = True
+                return df
+            df_sonic_els = load_els_log(uwi)
 
-        @st.cache_data
-        def load_els_log(uwi):
-            connection_els = Connection_ELS_LOG()
-            df = connection_els.kusto_query_LFP(uwi)
-            st.session_state.connection_ELS = True
-            return df
-        df_sonic_els = load_els_log(uwi)
-
-    except Exception as e:
-        st.write(f'Problem with connection to ELS API. Error: {e}')
+        except Exception as e:
+            st.write(f'Problem with connection to ELS API. Error: {e}')
+        
+        #st.write(load_els_log(uwi, 'LFP_DT', connection_els))
+        options_log = ['LFP_DT', 'LFP_DT_O', 'LFP_DT_G', 'LFP_DT_B']
+        selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
+        df_sonic = load_els_data(df_sonic_els, selected_log_curve)
+        df_sonic = df_sonic.sort_values(by=['md'])
+    elif selected_source_well_log == 'FMB':
+        try:
+            #df_sonic = pd.DataFrame()
+            @st.cache_data
+            def load_els_log(uwi):
+                connection_els = Connection_ELS_LOG()
+                df = connection_els.kusto_query_FMB(uwi)
+                st.session_state.connection_ELS = True
+                return df
+            df_sonic_els = load_els_log(uwi)
+            pass
+        except Exception as e:
+            st.write(f'Problem with connection to ELS API. Error: {e}')
+        options_log = ['DT']
+        selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
+        df_sonic = load_els_data(df_sonic_els, selected_log_curve)
+        df_sonic = df_sonic.sort_values(by=['md'])
     
-    #st.write(load_els_log(uwi, 'LFP_DT', connection_els))
-    options_log = ['LFP_DT', 'LFP_DT_O', 'LFP_DT_G', 'LFP_DT_B']
-    selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
-    df_sonic = load_els_data(df_sonic_els, selected_log_curve)
+
+col1, col2 = st.columns(2)
+with col1:
+    st.write(df[['md', 'tvd', 'tvd_ss', 'tvd_unit', 'md_unit','depth_source','depth_reference_elevation', 'time', 'time_unit', 'average_velocity', 'average_velocity_qc', 'interval_velocity', 'mae_soniclog_checkshot','qc_description']])
+with col2:
     st.write(df_sonic)
-
-
 
 
     #df_sonic = load_els_log(uwi, selected_curve_welllog, connection_els)
@@ -194,12 +222,16 @@ with col1:
     if decimate_step == 0:
         pass
     else:
-        
         td_seabed_sealevel = td[(td['depth_source'].str.contains('seabed') | (td['depth_source'].str.contains('sealevel')))]
         td_to_decimate = td[~(td['depth_source'].str.contains('seabed') | (td['depth_source'].str.contains('sealevel')))]
         td_decimate = decimate_dataframe(td_to_decimate, decimate_step)
         td = (pd.concat([td_seabed_sealevel, td_decimate]))
-
+with col2:
+    try:
+        depth_sonic = float(st.text_input(f"Enter depth (m) to start sonic from:", df_sonic['tvd_ss'].iloc[0]))
+        df_sonic = df_sonic[df_sonic['tvd_ss'] >= depth_sonic]
+    except:
+        pass
 
 #embed()
 col3, col4 = st.columns(2)
@@ -209,17 +241,8 @@ with col3:
         # Create your plot here
         st.write('## Time Domain')
         fig1 = go.Figure()
-
-        #fig1 = px.scatter(df_checkshot_plot2, x="twt picked", y="tvd_ss")
-
-      
-        fig1 = go.Figure()
-        #fig1.add_trace(go.Line(x=df_checkshot_plot2["time"],y=df_checkshot_plot2['tvd_ss'],name="Checkshot", marker_color='red'))
         fig1.add_trace(go.Scatter(y=td["tvd_ss"],x=td["time"],mode="markers",marker=dict(color='red',size=10),name='Checkshot data'))
-        #fig1.add_trace(go.Line(x=df_checkshot_plot2['u+std'],y=df_checkshot_plot2['tvd_ss'],fill=None,name="u+std",line_color="rgba(0,0,0,0)"))
-        #fig1.add_trace(go.Line(x=df_checkshot_plot2['u-std'],y=df_checkshot_plot2['tvd_ss'],fill='tonexty',name="u+std", line_color="rgba(0,0,0,0)"))
         try:
-            #time = getTime(np.array(df_sonic['tvd_ss'].astype(float)), np.array(df_sonic['interval_velocity_sonic']))*1000
             #TWT for sonic data 
             td_tointerpolate = td[['tvd_ss','time']].dropna()
             interp_func = interp1d(td_tointerpolate['tvd_ss'].astype(float), td_tointerpolate['time'], kind='linear')
@@ -229,7 +252,7 @@ with col3:
             dz = np.insert(dz, 0, 0)
             dt = 2 * dz / np.array(df_sonic['interval_velocity_sonic'])
             t = np.cumsum(dt)+first_time_sonic
-            fig1.add_trace(go.Line(x=t,y=df_sonic['tvd_ss'].astype(float),name="Sonic Log", marker_color='blue'))
+            fig1.add_trace(go.Line(x=t,y=df_sonic['tvd_ss'].astype(float),name=f"Sonic Log {selected_log_curve}", marker_color='blue'))
         except:
             st.write('No Sonic log available for this well')
 
@@ -242,7 +265,7 @@ with col3:
         height=1800,
         yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])])
         
-        st.plotly_chart(fig1)
+        #st.plotly_chart(fig1)
 
 df_sonic_plot2 = df_sonic.copy(deep=True)
 
@@ -266,19 +289,14 @@ with col4:
         st.write('## Velocity Domain')
         fig2 = go.Figure()
         fig2.add_trace(go.Line(x=td_vp,y=td_z, line_color='red', name='Vp Checkshot', line_shape='hv'))
-
+        #fig2.add_trace(go.Scatter(x=[0, 3], y=[float(seabed), float(seabed)], mode='lines',line=dict(color='black', dash='dash')))
+        
 
         try:
 
             df_sonic_plot2 = df_sonic_plot2.dropna(subset=['interval_velocity_sonic'])
-
-        
-            
             fig2.add_trace(go.Line(x=df_sonic_plot2['interval_velocity_sonic'],y=df_sonic_plot2['tvd_ss'],name="Sonic Log", marker_color='blue'))
-            
-
-
-
+            fig2.add_hline(y=float(seabed), line_width=8, line=dict(color='black', dash='dash'))
             # Filling the area between the upper and lower bounds
         except:
             pass
@@ -294,27 +312,38 @@ with col4:
         yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])],
         showlegend=True)
 
+fig = make_subplots(rows=1, cols=2, shared_yaxes=True)
+fig.add_trace(fig1['data'][0], row=1, col=1)
+fig.add_trace(fig2['data'][0], row=1, col=2)
 
-            #fig2 = px.line(df_sonic, x="vp", y="tvd_ss")  # Replace "x_column" and "y_column" with the appropriate column names from df_2   
-            #fig2.update_traces(connectgaps=True) 
-            #fig2.update_layout(
-            #title=f'Sonic Log data : Well {uwi}',
-            #xaxis_title="Vp (m/s)",
-            #yaxis_title='TVDSS (m)',
-            #autosize=False,
-            #width=400,
-            #height=900,
-            #yaxis_range=[max(df_checkshot["tvd_ss"]), min(df_checkshot["tvd_ss"])])
-            
-        st.plotly_chart(fig2)
-
-
+try:
+    fig.add_trace(fig1['data'][1], row=1, col=1)
+    fig.add_trace(fig2['data'][1], row=1, col=2)
+    fig.add_trace(
+        go.Scatter(
+            x=[fig2['data'][0]['x'][0], fig2['data'][0]['x'][-1]],  # Extend the line across the x-axis
+            y=[float(seabed), float(seabed)],  # Set the y-coordinate for the horizontal line
+            mode='lines',
+            line=dict(color='black', dash='dash'),
+            name='Seabed'  # Customize the line style
+        ),
+        row=1, col=2
+    )
+except:
+    pass
+fig.update_xaxes(title_text="Two-way Travel Time (TWT) (ms)", row=1, col=1)
+fig.update_xaxes(title_text="Interval Velocity (m/s)", row=1, col=2)
+fig.update_layout(height=1300, 
+                  width=1300, 
+                  yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])])
+st.plotly_chart(fig, use_container_width=True)
 
 if st.button("Save Checkshot and Sonic data:"):
     
 
     try:
         st.session_state['Checkshot'] = td
+        st.session_state['seabed'] = seabed
         st.write(f"Checkshot file for well {uwi} saved")
     except:
         st.write(f'No Checkshot file for well {uwi}')

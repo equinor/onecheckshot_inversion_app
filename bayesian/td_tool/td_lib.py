@@ -48,6 +48,22 @@ from PIL import Image
 #input_pkl_folder = root_folder + 'INPUT/PKL/'
 #cwn0 = 'NO_16/1-29_ST2'
 
+
+def resample_tvdss_md(df_well, df_wellbore):
+    
+
+    md_interp = interp1d(df_wellbore['md'], df_wellbore['tvd_msl'], kind='linear')
+    df_filtered = df_well[~df_well['md'].notna()]
+
+    # Identify rows with missing md values
+    missing_md_indices = df_well['md'].isnull()
+    
+    # Interpolate and assign to the original DataFrame
+    df_well.loc[missing_md_indices, 'md'] = md_interp(df_well.loc[missing_md_indices, 'TVDMSL'])
+    
+    return df_well
+    
+
 def extendLogsToZero(well_z, well_vp, water_depth, water_vel):
     
     # get time

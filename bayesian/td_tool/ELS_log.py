@@ -29,6 +29,17 @@ class Connection_ELS_LOG:
         df = dataframe_from_result_table(RESPONSE.primary_results[0])
         return df
     
+    def kusto_query_FMB(self, uwi):
+        KUSTO_QUERY = f"""
+            elsbkup_logdata_fmb_1311
+            | where unique_wellbore_identifier == '{uwi}'
+            | where isnotnull(MD) and isnotnull(TVDMSL)
+            | distinct unique_wellbore_identifier, MD, TVDMSL, DT
+        """
+        RESPONSE = self.KUSTO_CLIENT.execute(self.KUSTO_DATABASE, KUSTO_QUERY)        
+        df = dataframe_from_result_table(RESPONSE.primary_results[0])
+        return df
+
 def load_els_data(df_sonic, selected_log_curve):
 
     try:
@@ -44,9 +55,5 @@ def load_els_data(df_sonic, selected_log_curve):
         df_filtered = pd.DataFrame()
         df_filtered['source'] = np.nan
         return df_filtered    
-#connection_els = Connection_ELS_LOG()
-#df = connection_els.kusto_query(uwi=well)
-# Process the query response
 
-#show(df)
 

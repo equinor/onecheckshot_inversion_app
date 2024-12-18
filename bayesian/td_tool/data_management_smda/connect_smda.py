@@ -1,3 +1,5 @@
+import sys
+print(sys.path)
 import yaml
 import pandas as pd
 import psycopg2
@@ -5,6 +7,7 @@ import os
 import numpy as np
 from IPython import embed
 from pandasgui import show
+
 class Connection_Database:
   def __init__(self,host,dbname,user,password,sslmode):
     conn_string = "host={0} user={1} dbname={2} password={3} sslmode={4}".format(host, user, dbname, password, sslmode)

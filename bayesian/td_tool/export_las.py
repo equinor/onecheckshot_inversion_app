@@ -35,7 +35,7 @@ def to_las(uwi,output_file, depth_in,vp_input,vp_output,depth_step=0.1,null_valu
     nlog = len(log_name)
 
     # add depth curves to LAS
-    las.append_curve("TVDSS", depth, unit="m", descr="True Vertical Depth Subsea")
+    las.append_curve("DEPTH", depth, unit="m", descr="Measured Depth")
     #las.add_curve("TVD", depth, unit="m", descr="True Vertical Depth KB")
     #las.add_curve("TVDMSL", depth, unit="m", descr="True Vertical Depth Mean Sea Level")
 
