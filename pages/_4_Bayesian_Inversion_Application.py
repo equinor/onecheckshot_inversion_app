@@ -156,6 +156,7 @@ with col2:
         start_time = time.time()
         clas = Bayesian_Inference()
         df_well, td_z, td_t, ww, water_depth, water_velocity, C, std_total_depth = clas.run(df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, corr_order, inversion_start_depth, decimation_step, uwi)
+        df_well = df_well.rename(columns={'TVDMSL':'tvd_ss'})
         #st.write(df_checkshot, td_z)
         end_time = time.time()
         elapsed_time = end_time - start_time
@@ -164,7 +165,7 @@ with col2:
         #well_z_md = df_well['md'].values
         st.write(df_well)
         well_z_md = df_well['md'].values
-        well_z = df_well['TVDMSL'].values
+        well_z = df_well['tvd_ss'].values
         well_vp_ext = df_well['VP_EXT'].values
         well_vp = df_well['VP_BAYES'].values
         
@@ -348,13 +349,18 @@ from scipy.interpolate import interp1d
 st.write("### Export Las")
 col1, col2 = st.columns(2)
 with col1:
-    answer = st.radio("Do you want to apply step in depth?:", ("True", "False"))
-    if answer == "True":
+    answer_step = st.radio("Should depth resampling be performed to generate a curve with uniform depth intervals?", ("True", "False"))
+    if answer_step == "True":
         depth_step = st.text_input(f"Depth step", 0.2)
         depth_step = float(depth_step)
     else:
         depth_step = False
-
+with col2:
+    answer_petrel = st.radio("Should the file be exported in Petrel format", ("True", "False"))
+    if answer_petrel == "True":
+        petrel_format = True  
+    else:
+        petrel_format = False
 col1, col2 = st.columns(2)
 with col1:
     st.write("#### Export Bayesian velocity updated in MD")
@@ -364,28 +370,32 @@ with col2:
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("Generate LAS file", on_click=callback3):
-        results_api = get_wellbore_trajectory(uwi=uwi)
-        if pd.DataFrame(results_api['data']['results']).empty is False:            
-            df_wellbore = pd.DataFrame(results_api['data']['results'])
-            df_wellbore = df_wellbore.sort_values(by='md')
-            md_interp = interp1d(df_wellbore['md'], df_wellbore['tvd_msl'], kind='linear', fill_value=np.nan, bounds_error=False)
-            missing_md_indices = df_well['md'].isnull()
-            df_well.loc[missing_md_indices, 'md'] = md_interp(df_well.loc[missing_md_indices, 'TVDMSL'])
-            df_well = df_well.dropna(subset=['md'])
-            st.write(f"Trajectory in SMDA for well {uwi} goes from MD:{df_wellbore['md'].min()}m to MD:{df_wellbore['md'].max()}m and MD values were interpolated from TVDSS for this interval")
-            st.write(df_well)
+    if st.button("Generate LAS file in MD", on_click=callback3):
+        results_api, msg = get_wellbore_trajectory(uwi=uwi)
+        st.write(msg)
+        if results_api:
+            if pd.DataFrame(results_api['data']['results']).empty is False:
+                
 
-            to_las(depth_path="MD", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
-            st.write(f"Well {uwi} correctly exported as LAS file")
+                df_wellbore = pd.DataFrame(results_api['data']['results'])
+                df_wellbore = df_wellbore.sort_values(by='md')
+                md_interp = interp1d(df_wellbore['md'], df_wellbore['tvd_msl'], kind='linear', fill_value=np.nan, bounds_error=False)
+                missing_md_indices = df_well['md'].isnull()
+                df_well.loc[missing_md_indices, 'md'] = md_interp(df_well.loc[missing_md_indices, 'tvd_ss'])
+                df_well = df_well.dropna(subset=['md'])
+                st.write(f"Trajectory in SMDA for well {uwi} goes from MD:{df_wellbore['md'].min()}m to MD:{df_wellbore['md'].max()}m and MD values were interpolated from TVDSS for this interval")
+                to_las(depth_path="MD", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
+                st.write(f"Well {uwi} correctly exported as LAS file")
+                st.write(df_well)
+            else:
+                st.write(f"No wellbore trajectory data from SMDA plan survey samples for file {uwi}. It is not possible to convert TVDSS to MD. No LAS file is outputted")
         else:
-            st.write("### No MD could be found for this well")
-            df_wellbore = pd.DataFrame()
-            st.write(df_wellbore)
+            st.write(f"Due to an unsuccessful API connection for file {uwi}, no LAS file was generated.")
+            pass
 
 with col2:
     if st.button("Generate LAS file in TVDSS", on_click=callback3):
-        to_las(depth_path="TVDSS", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['TVDMSL']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']))
+        to_las(depth_path="TVDSS", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
         
 
         #df_well = resample_tvdss_md(df_well, df_wellbore)

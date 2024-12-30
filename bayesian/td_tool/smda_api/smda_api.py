@@ -63,16 +63,21 @@ class SmdaApiClient:
             headers=headers,
         )
         if response.status_code == 200:
-            return response.json()
+            msg = f"Connection to Wellbore plan survey samples from SMDA successful. Status code = {response.status_code}."
+            print(msg)
+            return response.json(), msg
+            
         else:
             msg = f"Unable to read data from API. Status code = {response.status_code}."
             if response.text:
                 msg += f" Message: {response.text}."
             print(msg)
-            return None
+            return None, msg
 def get_wellbore_trajectory(uwi):
-    encoded_uwi = urllib.parse.quote(uwi)
-    API_ENDPOINT = f"https://api.gateway.equinor.com/smda/v2.0/smda-api/wellbore-plan-survey-samples?_projection=unique_wellbore_identifier,%20md,%20tvd_msl&unique_wellbore_identifier={encoded_uwi}"
+    encoded_uwi = urllib.parse.quote(uwi, safe='')
+    print(encoded_uwi)
+    API_ENDPOINT = f"https://api.gateway.equinor.com/smda/v2.0/smda-api/wellbore-survey-samples?_projection=unique_wellbore_identifier,%20md,%20tvd_msl&unique_wellbore_identifier={encoded_uwi}"
+    print(API_ENDPOINT)
     c = SmdaApiClient()
-    response = c.get_wellbore_plan(API_ENDPOINT)
-    return response
+    response, msg = c.get_wellbore_plan(API_ENDPOINT)
+    return response, msg

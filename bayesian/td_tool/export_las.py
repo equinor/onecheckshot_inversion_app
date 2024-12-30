@@ -19,7 +19,7 @@ def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output,depth
         depth = depth[depth <= depth_in[-1]]
     else:
         depth = depth_in
-    
+
     # initiate LAS-file
     las = lasio.LASFile()
     # header values

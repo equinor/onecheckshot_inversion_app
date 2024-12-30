@@ -1,3 +1,4 @@
+#! \onecheckshot_inversion_app\.venv\Scripts\python.exe
 import streamlit as st
 import pandas as pd
 import math
@@ -5,7 +6,7 @@ from pathlib import Path
 import plotly.express as px
 from IPython import embed
 import matplotlib.pyplot as plt
-#py -m streamlit run _1_Introduction_Onecheckshot.py
+#py -m streamlit run _1_Introduction_tidee.py
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
     page_title='tidee',
