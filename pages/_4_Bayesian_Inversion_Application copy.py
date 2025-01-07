@@ -134,6 +134,8 @@ if "button_clicked" not in st.session_state:
     st.session_state.button_clicked = False
 if "button_clicked2" not in st.session_state:
     st.session_state.button_clicked2 = False
+if "button_resampling" not in st.session_state:
+    st.session_state.button_resampling = False    
 
 def callback():
     st.session_state.button_clicked = True
@@ -142,11 +144,17 @@ def callback2():
 def callback3():
     st.session_state.button_clicked = True
     st.session_state.button_clicked2 = True
+def callback4():
+    st.session_state.button_clicked = True
+    st.session_state.button_clicked2 = True
 
 
 
 with col2:
+    st.write(st.session_state.button_clicked, st.session_state.button_clicked2, st.session_state.button_resampling)
     st.session_state.button_clicked = False
+    if st.session_state.button_resampling:
+        callback()
     if (st.button("Run Bayesian Dix Inversion") or st.session_state.button_clicked2):
         st.session_state.button_clicked = True
         st.session_state.button_clicked2 = False
@@ -154,6 +162,7 @@ with col2:
         clas = Bayesian_Inference()
         df_well, td_z, td_t, ww, water_depth, water_velocity, C, std_total_depth = clas.run(df_checkshot, df_sonic, std_sonic, std_checkshot, apply_covariance, corr_order, inversion_start_depth, decimation_step, uwi)
         df_well = df_well.rename(columns={'TVDMSL':'tvd_ss'})
+        #st.write(df_checkshot, td_z)
         end_time = time.time()
         elapsed_time = end_time - start_time
         st.write(f"Time taken to run Bayesian Dix Inversion: {elapsed_time:.2f} seconds")
@@ -188,6 +197,7 @@ with col2:
     else:
         st.write("Inversion not running.")
     
+    st.write(st.session_state.button_clicked, st.session_state.button_clicked2)
 
 #df_checkshot, df_sonic, df_merged = filter_data(df_checkshot, df_sonic, raw_cks_df, uwi)
 
@@ -353,6 +363,7 @@ st.write("### Export Las")
 
 with st.form("my_form"):
     col1, col2 = st.columns(2)
+    st.write("Inside the form")
     with col1:
         
         answer_step = st.radio("Should depth resampling be performed to generate a curve with uniform depth intervals?", ("True", "False"))
@@ -362,10 +373,8 @@ with st.form("my_form"):
         depth_export = st.radio("Should depth be generated in MD or TVDSS?", ("MD", "TVDSS"))
         st.write("** As the estimation of the velocity trend is done in TVDSS, it is necessary to fetch SMDA wellbore trajectory to convert TVDSS to MD for missing values.")
 
-            
-
     with col2:
-        answer_petrel = st.radio("Please select depth signal convention related to Mean Seawater Level (MSL):", ("Depth values above MSL are negative, while depth values below MSL are positive.", "Depth values above MSL are positive, while depth values below MSL are negative."))
+        answer_petrel = st.radio("Should the file be exported in Petrel format", ("True", "False"))
         if answer_petrel == "True":
             petrel_format = True  
         else:
@@ -377,35 +386,53 @@ with st.form("my_form"):
         depth_step = float(depth_step)
     else:
         depth_step = False
-    submitted = st.form_submit_button("Generate LAS file", on_click=callback3)      
+    submitted = st.form_submit_button("Generate LAS file")      
     if submitted:
-        if depth_export == "MD":
-            results_api, msg = get_wellbore_trajectory(uwi=uwi)
-            if results_api:
-                if pd.DataFrame(results_api['data']['results']).empty is False:
-                    
+        st.write("answer_step", depth_step, "petrel_format", petrel_format)
 
-                    df_wellbore = pd.DataFrame(results_api['data']['results'])
-                    df_wellbore = df_wellbore.sort_values(by='md')
-                    md_interp = interp1d(df_wellbore['md'], df_wellbore['tvd_msl'], kind='linear', fill_value=np.nan, bounds_error=False)
-                    missing_md_indices = df_well['md'].isnull()
-                    df_well.loc[missing_md_indices, 'md'] = md_interp(df_well.loc[missing_md_indices, 'tvd_ss'])
-                    if df_well['md'].isnull().any():
-                        st.write(f"Warning: The following TVDSS values could not be calculated because these are out of range from wellbore trajectory in SMDA: {df_well[df_well['md'].isnull()]['tvd_ss'].values}")
-                    df_well = df_well.dropna(subset=['md'])
-                    st.write(f"Trajectory in SMDA for well {uwi} goes from MD:{df_wellbore['md'].min()}m to MD:{df_wellbore['md'].max()}m and MD missing points were interpolated from TVDSS within this interval")
-                    to_las(depth_path="MD", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
-                    st.write(f"Velocity Input, Velocity Extended, and Velocity Output (Bayesian) for well {uwi} were successfully exported by MD as LAS File.")
-                else:
-                    st.write(f"No wellbore trajectory data from SMDA plan survey samples for file {uwi}. It is not possible to convert TVDSS to MD. No LAS file is outputted")
+st.write("Outside the form")
+st.write(answer_step, answer_petrel)
+col1, col2 = st.columns(2)
+with col1:
+    st.write("#### Export Bayesian velocity updated in MD")
+    st.write("##### * As the estimation of the velocity trend is done in TVDSS, it is necessary to fetch SMDA wellbore trajectory to convert TVDSS to MD.")
+with col2:
+    st.write("#### Export Bayesian velocity updated in TVDSS")
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("Generate LAS file in MD", on_click=callback3):
+        results_api, msg = get_wellbore_trajectory(uwi=uwi)
+        st.write(msg)
+        if results_api:
+            if pd.DataFrame(results_api['data']['results']).empty is False:
+                
+
+                df_wellbore = pd.DataFrame(results_api['data']['results'])
+                df_wellbore = df_wellbore.sort_values(by='md')
+                md_interp = interp1d(df_wellbore['md'], df_wellbore['tvd_msl'], kind='linear', fill_value=np.nan, bounds_error=False)
+                missing_md_indices = df_well['md'].isnull()
+                df_well.loc[missing_md_indices, 'md'] = md_interp(df_well.loc[missing_md_indices, 'tvd_ss'])
+                if df_well['md'].isnull().any():
+                    st.write(f"Warning: The following TVDSS values could not be calculated because these are out of range from wellbore trajectory in SMDA: {df_well[df_well['md'].isnull()]['tvd_ss'].values}")
+                df_well = df_well.dropna(subset=['md'])
+                st.write(f"Trajectory in SMDA for well {uwi} goes from MD:{df_wellbore['md'].min()}m to MD:{df_wellbore['md'].max()}m and MD missing points were interpolated from TVDSS within this interval")
+                to_las(depth_path="MD", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
+                st.write(f"Well {uwi} correctly exported as LAS file")
+                st.write(df_well)
             else:
-                st.write(f"Due to an unsuccessful API connection for file {uwi}, no LAS file was generated.")
-                pass
-        elif depth_export == "TVDSS":
-            to_las(depth_path="TVDSS", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
-            st.write(f"Velocity Input, Velocity Extended, and Velocity Output (Bayesian) for well {uwi} were successfully exported by TVDSS as LAS File.")
+                st.write(f"No wellbore trajectory data from SMDA plan survey samples for file {uwi}. It is not possible to convert TVDSS to MD. No LAS file is outputted")
+        else:
+            st.write(f"Due to an unsuccessful API connection for file {uwi}, no LAS file was generated.")
+            pass
 
+with col2:
+    if st.button("Generate LAS file in TVDSS", on_click=callback3):
+        to_las(depth_path="TVDSS", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
+        
 
-
+        #df_well = resample_tvdss_md(df_well, df_wellbore)
+        #to_las(uwi=uwi,output_file="test", depth_in=np.array(df_well['md']), vp_input=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']))
+        st.write(f"Well {uwi} correctly exported as LAS file")
         
 

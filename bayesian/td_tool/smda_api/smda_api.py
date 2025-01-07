@@ -77,6 +77,7 @@ def get_wellbore_trajectory(uwi):
     encoded_uwi = urllib.parse.quote(uwi, safe='')
     print(encoded_uwi)
     API_ENDPOINT = f"https://api.gateway.equinor.com/smda/v2.0/smda-api/wellbore-survey-samples?_projection=unique_wellbore_identifier,%20md,%20tvd_msl&unique_wellbore_identifier={encoded_uwi}"
+    print("encoded_uwi", encoded_uwi)
     print(API_ENDPOINT)
     c = SmdaApiClient()
     response, msg = c.get_wellbore_plan(API_ENDPOINT)
