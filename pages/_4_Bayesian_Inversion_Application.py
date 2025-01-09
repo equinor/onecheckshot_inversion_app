@@ -27,8 +27,9 @@ st.write('# Bayesian Inversion')
 col1, col2 = st.columns(2)
 with col1:
     st.write('## Application')
-    st.write('Welcome to the Bayesian Inversion section! Bayesian inference can be a method to apply drift on the sonic log using checkshot data. The aim is to generate a time-depth relationship that keeps the high-resolution from sonic log, but that also matches the full coverage from checkshot data.\
-            The output is a ready-to-use velocity trend for multipliple purposes: well-tie; depth conversion; seismic depth processing; etc. You can either run the bayesian inference with Standard values or select some of the parameters yourself.')
+    st.write('#### Welcome to the Bayesian Inversion section! Bayesian inference can be a method to apply drift on the sonic log using checkshot data. The aim is to generate a time-depth relationship that keeps the high-resolution from sonic log, but that also matches the full coverage from checkshot data.\
+             The combination of input data and model uncertainties provides a balance between data fit (matching the check-shots) and avoiding large unrealistic changes to the velocities')
+    st.write('The output is a ready-to-use velocity trend for multipliple purposes: well-tie; depth conversion; seismic depth processing; etc. You can either run the bayesian inference with Standard values or select some of the parameters yourself.')
 try:
     df_sonic = st.session_state['Sonic_log']
     df_checkshot = st.session_state['Checkshot']
@@ -63,8 +64,9 @@ with col2:
                                                 Standard value for well {uwi} is seabed depth: {float(df_checkshot[(df_checkshot['depth_source'] == 'seabed from smda') | (df_checkshot['depth_source'] == 'seabed detected')]['tvd_ss'])} m", float(df_checkshot[(df_checkshot['depth_source'] == 'seabed from smda') | (df_checkshot['depth_source'] == 'seabed detected')]['tvd_ss']))
         inversion_start_depth = float(inversion_start_depth)
 
-    st.write("### Exponential Correlation Matrix")
-    st.write("An exponential correlation matrix is a mathematical tool used to model spatial autocorrelation between data points. In the context of Bayesian inversion, this matrix is employed to introduce spatial correlation into the prior model. This correlation assumes that closely spaced depth samples exhibit higher correlation than those that are more distant, with the correlation decaying exponentially as the distance increases.")
+    st.write("### Exponential Correlation Matrix - Smoothness")
+    st.write("An exponential correlation matrix is a mathematical tool used to model spatial autocorrelation between data points. In the context of Bayesian inversion, this matrix is employed to introduce spatial correlation into the prior model. This correlation assumes that closely spaced depth samples exhibit higher correlation than those that are more distant, with the correlation decaying exponentially as the distance increases. This tool will increase smoothness in velocity correction.")
+    st.write("")
     col1_3_1, col1_3_2 = st.columns(2)
     with col1_3_1:
         apply_covariance = st.radio(
@@ -79,6 +81,7 @@ with col2:
             corr_order = None
 
     st.write('### Definition of uncertainties')
+    st.write('An estimate of the uncertainty is assigned to the input velocity log to give a prior model probability distribution p(m). Similarly, an measurement error is assigned to the checkshots which gives a data probability distribution p(d). Both distributions are assumed mutivariate Gaussian')
     st.write('Uncertainty associated to Sonic log shall be higher than the one associated to Checkshot Data')
     col1_4, col1_5 = st.columns(2)
     
@@ -205,6 +208,8 @@ if (st.session_state.button_clicked == True) or (st.session_state.button_clicked
         st.write("### Comparison")
     with col4_plot:
         st.write("### Velocity Difference")
+        answer_plot = "Vp Output - Vp Input"
+        xx = well_vp - well_vp_ext
         #if st.session_state.button_clicked:
         #    answer_plot = st.radio("Should the velocity difference be shown in:", ("Vp Output - Vp Input", "Vp Input - Vp Output"))
         #    callback3()
@@ -227,8 +232,8 @@ if (st.session_state.button_clicked == True) or (st.session_state.button_clicked
     fig.add_trace(go.Scatter(x=well_vp, y=well_z, mode='lines', name='Vp Posterior', line=dict(color='blue'), legendgroup = '3'), row=1, col=3)
     fig.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed', legendgroup = '3'), row=1, col=3)
     fig.add_trace(go.Line(x=td_vp, y=td_z, line_shape='hv',line=dict(color='red'),name='Vp Checkshot', legendgroup = '3'), row=1, col=3)    
-    xx = well_vp - well_vp_ext
-    fig.add_trace(go.Scatter(x=xx, y=well_z, mode='lines', line=dict(color='blue'), name="Vp Posterior - Vp Prior", legendgroup = '4'), row = 1, col=4)
+    #xx = well_vp - well_vp_ext
+    fig.add_trace(go.Scatter(x=xx, y=well_z, mode='lines', line=dict(color='blue'), name=answer_plot, legendgroup = '4'), row = 1, col=4)
     
     xmin = np.min(xx) - 10
     xmax = np.max(xx) + 10
@@ -238,7 +243,7 @@ if (st.session_state.button_clicked == True) or (st.session_state.button_clicked
     fig.update_xaxes(title_text="Interval Velocity (m/s)", range =[0, np.max(np.union1d(well_vp, td_vp)) * 1.2], row=1, col=1)
     fig.update_xaxes(title_text="Interval Velocity (m/s)", range=[0, np.max(np.union1d(well_vp, td_vp)) * 1.2], row=1, col=2)
     fig.update_xaxes(title_text="Interval Velocity (m/s)", range=[0, np.max(np.union1d(well_vp, td_vp)) * 1.2], row=1, col=3)
-    fig.update_xaxes(title_text="Interval Velocity Difference (m/s)", range=[xmin, xmax], row=1, col=4)
+    fig.update_xaxes(title_text=f"{answer_plot} (m/s)", range=[xmin, xmax], row=1, col=4)
 
     fig.update_layout(height=1300, 
                     width=1300,
@@ -351,6 +356,7 @@ if (st.session_state.button_clicked == True) or (st.session_state.button_clicked
 from scipy.interpolate import interp1d  
 st.write("### Export Las")
 
+
 with st.form("my_form"):
     col1, col2 = st.columns(2)
     with col1:
@@ -359,18 +365,14 @@ with st.form("my_form"):
         st.write(answer_step)
         depth_step = st.text_input(f"Depth step", 0.2)
         
-        depth_export = st.radio("Should depth be generated in MD or TVDSS?", ("MD", "TVDSS"))
-        st.write("** As the estimation of the velocity trend is done in TVDSS, it is necessary to fetch SMDA wellbore trajectory to convert TVDSS to MD for missing values.")
+        depth_export = st.radio("Should depth be generated in MD or TVDSS?", ("MD and TVDSS", "TVDSS"))
+        st.write("** As the estimation of the velocity trend is done in TVDSS, it is necessary to fetch SMDA wellbore trajectory to interpolate MD values from TVDSS for sections with no sonic log coverage.")
 
             
 
     with col2:
-        answer_petrel = st.radio("Please select depth signal convention related to Mean Seawater Level (MSL):", ("Depth values above MSL are negative, while depth values below MSL are positive.", "Depth values above MSL are positive, while depth values below MSL are negative."))
-        if answer_petrel == "True":
-            petrel_format = True  
-        else:
-            petrel_format = False    
-    
+        answer_depth_convention = st.radio("Please select depth signal convention related to Mean Seawater Level (MSL):", ("Depth values above MSL are negative, while depth values below MSL are positive.", "Depth values above MSL are positive, while depth values below MSL are negative."))
+      
 
     # Every form must have a submit button.
     if answer_step == 'True':
@@ -379,7 +381,7 @@ with st.form("my_form"):
         depth_step = False
     submitted = st.form_submit_button("Generate LAS file", on_click=callback3)      
     if submitted:
-        if depth_export == "MD":
+        if depth_export == "MD and TVDSS":
             results_api, msg = get_wellbore_trajectory(uwi=uwi)
             if results_api:
                 if pd.DataFrame(results_api['data']['results']).empty is False:
@@ -393,8 +395,10 @@ with st.form("my_form"):
                     if df_well['md'].isnull().any():
                         st.write(f"Warning: The following TVDSS values could not be calculated because these are out of range from wellbore trajectory in SMDA: {df_well[df_well['md'].isnull()]['tvd_ss'].values}")
                     df_well = df_well.dropna(subset=['md'])
+
                     st.write(f"Trajectory in SMDA for well {uwi} goes from MD:{df_wellbore['md'].min()}m to MD:{df_wellbore['md'].max()}m and MD missing points were interpolated from TVDSS within this interval")
-                    to_las(depth_path="MD", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
+                    df_output = to_las(depth_path="MD", uwi=uwi,output_file=f"las_export/output_veltrend_test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention, md_interp=md_interp, depth_in_tvdss=np.array(df_well['tvd_ss']))
+                    st.write(df_output)
                     st.write(f"Velocity Input, Velocity Extended, and Velocity Output (Bayesian) for well {uwi} were successfully exported by MD as LAS File.")
                 else:
                     st.write(f"No wellbore trajectory data from SMDA plan survey samples for file {uwi}. It is not possible to convert TVDSS to MD. No LAS file is outputted")
@@ -402,10 +406,8 @@ with st.form("my_form"):
                 st.write(f"Due to an unsuccessful API connection for file {uwi}, no LAS file was generated.")
                 pass
         elif depth_export == "TVDSS":
-            to_las(depth_path="TVDSS", uwi=uwi,output_file="las_export/test", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step)
+            df_output = to_las(depth_path="TVDSS", uwi=uwi,output_file=f"las_export/output_veltrend_test", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention)
             st.write(f"Velocity Input, Velocity Extended, and Velocity Output (Bayesian) for well {uwi} were successfully exported by TVDSS as LAS File.")
-
-
-
+            st.write(df_output)
         
 

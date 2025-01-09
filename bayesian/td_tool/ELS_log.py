@@ -23,7 +23,7 @@ class Connection_ELS_LOG:
             els_logdata_lfp
             | where unique_wellbore_identifier == '{uwi}'
             | where isnotnull(MD) and isnotnull(TVDMSL)
-            | distinct unique_wellbore_identifier, MD, TVDMSL, LFP_DT, LFP_DT_O, LFP_DT_G, LFP_DT_B
+            | distinct unique_wellbore_identifier, MD, TVDMSL, LFP_VP_B, LFP_VP_LOG, LFP_VP_G, LFP_VP_O, LFP_VP_V
         """
         RESPONSE = self.KUSTO_CLIENT.execute(self.KUSTO_DATABASE, KUSTO_QUERY)
         df = dataframe_from_result_table(RESPONSE.primary_results[0])
@@ -31,7 +31,7 @@ class Connection_ELS_LOG:
     
     def kusto_query_FMB(self, uwi):
         KUSTO_QUERY = f"""
-            elsbkup_logdata_fmb_1311
+            ls_logdata_fmb_1011
             | where unique_wellbore_identifier == '{uwi}'
             | where isnotnull(MD) and isnotnull(TVDMSL)
             | distinct unique_wellbore_identifier, MD, TVDMSL, DT
@@ -48,7 +48,7 @@ def load_els_data(df_sonic, selected_log_curve):
         df_well_log = df_well_log.dropna()        
         #selected_source_welllog = 'LFP'
         #df_well_log['source'] = selected_source_welllog
-        df_well_log['interval_velocity_sonic'] = [0.3048/(float(sonic)*0.000001) if sonic != 0 else 0 for sonic in df_well_log[f'{selected_log_curve}']]
+        df_well_log['interval_velocity_sonic'] = df_well_log[f"{selected_log_curve}"]
         return df_well_log
 
     except Exception as e:

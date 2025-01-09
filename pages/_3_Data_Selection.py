@@ -33,7 +33,7 @@ wells = connect.get_wells(database_checkshot)
 
 connect.close_connection()
 
-st.write("## Data Visualization")
+st.write("## Select Data")
 def select_well():
     selected_value = st.selectbox(f"Select Checkshot Wellbore", options=sorted(wells))
     return selected_value
@@ -64,6 +64,7 @@ with col1:
     
 
 
+
 with col2:
     selected_source_well_log = st.selectbox(f"Select Sonic log File Source", options=['LFP', 'FMB'])
 
@@ -83,7 +84,7 @@ with col2:
             st.write(f'Problem with connection to ELS API. Error: {e}')
         
         #st.write(load_els_log(uwi, 'LFP_DT', connection_els))
-        options_log = ['LFP_DT', 'LFP_DT_O', 'LFP_DT_G', 'LFP_DT_B']
+        options_log = ['LFP_VP_LOG', 'LFP_VP_B', 'LFP_VP_G', 'LFP_VP_V', 'LFP_VP_O']
         selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
         df_sonic = load_els_data(df_sonic_els, selected_log_curve)
         df_sonic = df_sonic.sort_values(by=['md'])
