@@ -6,7 +6,6 @@ import psycopg2
 import os
 import numpy as np
 from IPython import embed
-from pandasgui import show
 
 class Connection_Database:
   def __init__(self,host,dbname,user,password,sslmode):

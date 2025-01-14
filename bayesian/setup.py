@@ -9,7 +9,7 @@ setuptools.setup(
     name="td_tools",
     version="0.1.0",
     author="Equinor ASA",
-    author_email="eidi@equinor.com",
+    author_email="apenh@equinor.com",
     description="Bayesian calibration of velicty to CKS",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -54,16 +54,17 @@ def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output, dept
     print("HERE",len(pd.DataFrame(depth_in, depth_in_tvdss)[1:]),len(pd.DataFrame(depth_in_tvdss, depth_in)) )
     
     
+
+
     # create output depth curve
     if depth_step is not False:
         depth = np.arange(depth_in[0], depth_in[-1] + depth_step, depth_step)
         depth = depth[depth <= depth_in[-1]]
-        if depth_path == "MD":
-            md_to_tvdss = interp1d(depth_in, depth_in_tvdss, kind='linear', fill_value=np.nan, bounds_error=False)
-            depth_tvdss = md_to_tvdss(depth)
     else:
         depth = depth_in
-
+    if depth_path == "MD":
+        md_to_tvdss = interp1d(depth_in, depth_in_tvdss, kind='linear', fill_value=np.nan, bounds_error=False)
+        depth_tvdss = md_to_tvdss(depth)
 
     # initiate LAS-file
     las = lasio.LASFile()
@@ -114,7 +115,8 @@ def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output, dept
     print(answer_depth_convention)
     if answer_depth_convention == "Depth values above MSL are positive, while depth values below MSL are negative.":
         depth = -depth
-        depth_tvdss = -depth_tvdss
+        if depth_path == "MD":
+            depth_tvdss = -depth_tvdss
 
     else:
         pass

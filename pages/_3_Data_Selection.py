@@ -21,14 +21,15 @@ from bayesian.td_tool.td_lib import getVel
 import pandas as pd
 from bayesian.td_tool.data_management_smda.connect_smda import Connection_Database, get_connect_database, generate_df
 from scipy.interpolate import interp1d
-from bayesian.td_tool.ELS_log import Connection_ELS_LOG, load_els_data
+from bayesian.td_tool.ELS_log import Connection_ELS_LOG, load_els_data, load_els_data_fmb
 
 st.set_page_config(layout="wide")
 #raw_cks_df, df_checkshot, df_sonic = get_data()
 host, dbname, user, password, sslmode = get_connect_database()
 connect = Connection_Database(host,dbname,user,password,sslmode)
 
-database_checkshot = "smda.smda_workspace.wellbore_checkshot_data_qc"
+#database_checkshot = "smda.smda_workspace.wellbore_checkshot_data_qc"
+database_checkshot = "smda.smda_workspace.wellbore_checkshot_data"
 wells = connect.get_wells(database_checkshot)
 
 connect.close_connection()
@@ -43,13 +44,13 @@ st.write(f"Well selected: {uwi}")
 
 host, dbname, user, password, sslmode = get_connect_database()
 
-columns = 'md, md_unit, tvd, tvd_ss, tvd_unit, depth_reference_elevation, depth_source, time, time_unit, source_file, unique_wellbore_identifier, average_velocity, interval_velocity, qc_description, md_increasing, tvd_ss_increasing, time_increasing, average_velocity_qc, trajectory_checked, mae_soniclog_checkshot, comparison_sonic_log_qc, preference_checkshotfile'
+columns = 'md, md_unit, tvd, tvd_ss, tvd_unit, depth_reference_elevation, depth_source, time, time_unit, source_file, unique_wellbore_identifier, average_velocity, interval_velocity, qc_description, md_increasing, tvd_ss_increasing, time_increasing, average_velocity_qc, trajectory_checked, comparison_sonic_log_qc, preference_checkshotfile'
 df = generate_df(host, dbname, user, password, sslmode, columns, database_checkshot, uwi)
 
-df.loc[df['depth_source'].str.contains('sealevel', case=False), 'interval_velocity'] = 1479
-df.loc[df['depth_source'].str.contains('sealevel', case=False), 'average_velocity'] = 1479
-df.loc[df['depth_source'].str.contains('seabed', case=False), 'interval_velocity'] = 1479
-df.loc[df['depth_source'].str.contains('seabed', case=False), 'average_velocity'] = 1479
+#df.loc[df['depth_source'].str.contains('sealevel', case=False), 'interval_velocity'] = 1479
+#df.loc[df['depth_source'].str.contains('sealevel', case=False), 'average_velocity'] = 1479
+#df.loc[df['depth_source'].str.contains('seabed', case=False), 'interval_velocity'] = 1479
+#df.loc[df['depth_source'].str.contains('seabed', case=False), 'average_velocity'] = 1479
 seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
 
 
@@ -61,15 +62,15 @@ with col1:
 
     df = df[(df['source_file'] == selected_source) & (df['md_increasing'] == 'true')]
     df.sort_values(by=['md'], ascending=[True], inplace=True)
+
     
-
-
-
 with col2:
     selected_source_well_log = st.selectbox(f"Select Sonic log File Source", options=['LFP', 'FMB'])
 
     if "connection_ELS" not in st.session_state:
         st.session_state.connection_ELS = False
+
+
     if selected_source_well_log == 'LFP':    
         try:
             @st.cache_data
@@ -103,13 +104,13 @@ with col2:
             st.write(f'Problem with connection to ELS API. Error: {e}')
         options_log = ['DT']
         selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
-        df_sonic = load_els_data(df_sonic_els, selected_log_curve)
+        df_sonic = load_els_data_fmb(df_sonic_els, selected_log_curve)
         df_sonic = df_sonic.sort_values(by=['md'])
     
 
 col1, col2 = st.columns(2)
 with col1:
-    st.write(df[['md', 'tvd', 'tvd_ss', 'tvd_unit', 'md_unit','depth_source','depth_reference_elevation', 'time', 'time_unit', 'average_velocity', 'average_velocity_qc', 'interval_velocity', 'mae_soniclog_checkshot','qc_description']])
+    st.write(df[['md', 'tvd', 'tvd_ss', 'tvd_unit', 'md_unit','depth_source','depth_reference_elevation', 'time', 'time_unit', 'average_velocity', 'average_velocity_qc', 'interval_velocity','qc_description']])
 with col2:
     st.write(df_sonic)
 
@@ -219,14 +220,49 @@ def decimate_dataframe(df, decimate_step):
 
 col1, col2 = st.columns(2)
 with col1:
-    decimate_step = int(st.text_input(f"Enter Decimation Step for Checkshot Data:", 0))
-    if decimate_step == 0:
-        pass
-    else:
-        td_seabed_sealevel = td[(td['depth_source'].str.contains('seabed') | (td['depth_source'].str.contains('sealevel')))]
-        td_to_decimate = td[~(td['depth_source'].str.contains('seabed') | (td['depth_source'].str.contains('sealevel')))]
-        td_decimate = decimate_dataframe(td_to_decimate, decimate_step)
-        td = (pd.concat([td_seabed_sealevel, td_decimate]))
+    col1_1, col2_1 = st.columns(2)
+    with col1_1:
+        decimate_step = int(st.text_input(f"Enter Decimation Step for Checkshot Data:", 0))
+        if decimate_step == 0:
+            pass
+        else:
+            td_seabed_sealevel = td[(td['depth_source'].str.contains('seabed') | (td['depth_source'].str.contains('sealevel')))]
+            td_to_decimate = td[~(td['depth_source'].str.contains('seabed') | (td['depth_source'].str.contains('sealevel')))]
+            td_decimate = decimate_dataframe(td_to_decimate, decimate_step)
+            td = (pd.concat([td_seabed_sealevel, td_decimate]))
+    with col2_1:
+        if 'checkshot_values_to_exclude' not in st.session_state:
+            st.session_state.checkshot_values_to_exclude = []
+        try:
+            delete_checkshot_point = float(st.text_input(f"Enter Checkshot depth point to exclude:", -999.25))
+            st.write("TVDSS point selected to be excluded:", delete_checkshot_point, ". Click on the bottom below to append it to the exclusion list.")
+
+        except:
+            st.write("Only numbers are allowed")
+
+        
+        if st.button("Append"):
+            if delete_checkshot_point != -999.25:
+                try:
+                    if delete_checkshot_point not in st.session_state.checkshot_values_to_exclude:
+                        st.session_state.checkshot_values_to_exclude.append(delete_checkshot_point)
+                except:
+                    st.write("Please enter an accurate TVDSS point to be excluded")   
+        if st.button("Clear values to exclude"):
+            st.session_state.checkshot_values_to_exclude = []
+        #st.write(st.session_state.checkshot_values_to_exclude)
+        st.write("Depth points to exclude:", str([x for x in st.session_state.checkshot_values_to_exclude]))
+        if st.button("Exclude Values"):
+            if len(st.session_state.checkshot_values_to_exclude) != 0:
+                td = td[~td['tvd_ss'].isin((st.session_state.checkshot_values_to_exclude))]
+                st.session_state['Checkshot'] = td
+                
+
+
+        
+
+        
+         
 with col2:
     try:
         depth_sonic = float(st.text_input(f"Enter depth (m) to start sonic from:", df_sonic['tvd_ss'].iloc[0]))
@@ -266,6 +302,9 @@ with col3:
         height=1800,
         yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])])
         
+        
+
+            
         #st.plotly_chart(fig1)
 
 df_sonic_plot2 = df_sonic.copy(deep=True)
@@ -343,7 +382,11 @@ if st.button("Save Checkshot and Sonic data:"):
     
 
     try:
-        st.session_state['Checkshot'] = td
+        if st.session_state.checkshot_values_to_exclude:
+            pass #Checkshot was already defined
+            
+        else:
+            st.session_state['Checkshot'] = td
         st.session_state['seabed'] = seabed
         st.write(f"Checkshot file for well {uwi} saved")
     except:
