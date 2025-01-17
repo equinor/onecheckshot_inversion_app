@@ -21,7 +21,7 @@ from bayesian.td_tool.td_lib import getVel
 import pandas as pd
 from bayesian.td_tool.data_management_smda.connect_smda import Connection_Database, get_connect_database, generate_df
 from scipy.interpolate import interp1d
-from bayesian.td_tool.ELS_log import Connection_ELS_LOG, load_els_data, load_els_data_fmb
+from bayesian.td_tool.ELS_log import Connection_ELS_LOG, load_els_data, load_els_data_fmb, log_in
 
 st.set_page_config(layout="wide")
 #raw_cks_df, df_checkshot, df_sonic = get_data()
@@ -65,6 +65,12 @@ with col1:
 
     
 with col2:
+    if "KUSTO_CLIENT_TEST" not in st.session_state:
+        KUSTO_CLIENT_TEST = log_in()
+        st.session_state.KUSTO_CLIENT_TEST = KUSTO_CLIENT_TEST
+
+    KUSTO_CLIENT_TEST = st.session_state.KUSTO_CLIENT_TEST
+      
     selected_source_well_log = st.selectbox(f"Select Sonic log File Source", options=['LFP', 'FMB'])
 
     if "connection_ELS" not in st.session_state:
@@ -76,7 +82,7 @@ with col2:
             @st.cache_data
             def load_els_log(uwi):
                 connection_els = Connection_ELS_LOG()
-                df = connection_els.kusto_query_LFP(uwi)
+                df = connection_els.kusto_query_LFP(KUSTO_CLIENT_TEST, uwi)
                 st.session_state.connection_ELS = True
                 return df
             df_sonic_els = load_els_log(uwi)
@@ -85,7 +91,7 @@ with col2:
             st.write(f'Problem with connection to ELS API. Error: {e}')
         
         #st.write(load_els_log(uwi, 'LFP_DT', connection_els))
-        options_log = ['LFP_VP_LOG', 'LFP_VP_B', 'LFP_VP_G', 'LFP_VP_V', 'LFP_VP_O']
+        options_log = ['LFP_VP_V', 'LFP_VP_B', 'LFP_VP_G', 'LFP_VP_O', 'LFP_VP_LOG']
         selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
         df_sonic = load_els_data(df_sonic_els, selected_log_curve)
         df_sonic = df_sonic.sort_values(by=['md'])
@@ -95,13 +101,14 @@ with col2:
             @st.cache_data
             def load_els_log(uwi):
                 connection_els = Connection_ELS_LOG()
-                df = connection_els.kusto_query_FMB(uwi)
+                df = connection_els.kusto_query_FMB(KUSTO_CLIENT_TEST, uwi)
                 st.session_state.connection_ELS = True
                 return df
             df_sonic_els = load_els_log(uwi)
             pass
         except Exception as e:
             st.write(f'Problem with connection to ELS API. Error: {e}')
+        
         options_log = ['DT']
         selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
         df_sonic = load_els_data_fmb(df_sonic_els, selected_log_curve)

@@ -1,9 +1,7 @@
 import numpy as np
 import pandas as pd
 import re
-import openpyxl
-#feature is a variable passed within FME, this is just to bypass this requirement
-feature = 'f'
+
 def processFeature(feature):
     pass
 
@@ -30,9 +28,11 @@ class Rename_functions:
             "TWTMSL": "TWT",
             "OWTRD": "OWT",
             "OWTREFML": "OWT",
+            "OWTMSL": "OWT",
             "TC": "OWT",
-            "T": "OWT",
-            "One-Way Vertical Time": "OWT"
+            "One-Way Vertical Time": "OWT",
+            "One Way Time": "OWT",
+            "Two Way Time":"TWT"
         }
         # Dictionary to rename depth reference datum
         self.rename_depth_reference_datum = {
@@ -143,20 +143,23 @@ class FeatureProcessor():
             string_list = [test.replace("\\t", " ").replace("NaN", "") for test in my_list]
             
         elif filepath.lower().endswith('.xlsx'):
+            
             df = pd.read_excel(filepath, header=None)
             my_list = [','.join(str(x) for x in row) for row in df.values]
             if text_or_number == 'text':
                 string_list = [test.replace(",","  ").replace("nan", ".") for test in my_list]
             elif text_or_number == 'number':
-                string_list = [test.replace(",","  ").replace("nan", "-999.25") for test in my_list]
+                string_list = [test.replace(",","  ").replace("nan", "-999.25") for test in my_list]  
         return string_list
 
     # Function to identify text features in the text
 
     def read_text(self, filepath):
+        
         string_list = self.extract_data(filepath=filepath, text_or_number="text")
+        
         # It uses regular expression (regex) to check if there are at least two headers. There can be units within these headers
-        regex_pattern = r"(?P<GP1>TVD SS|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL)\)?(?P<GP1_unit>\s?\(?(m|s|ms)?\)?)?\s+\(?(?P<GP2>TVD SS|None|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL)\)?(?P<GP2_unit>\s?\(?(m|s|ms)\)?)?\s?\(?(?P<GP3>TVD SS|TVDSS|Time|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL)?"
+        regex_pattern = r"(?P<GP1>TVD SS|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL|Depth|One Way Time|Two Way Time)\)?(?P<GP1_unit>\s?\(?(m|s|ms)?\)?)?\s+\(?(?P<GP2>TVD SS|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL|Depth|One Way Time|Two Way Time)\)?(?P<GP2_unit>\s?\(?(m|s|ms)\)?)?\s?\(?(?P<GP3>TVD SS|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL|Depth|One Way Time|Two Way Time)?"
         match_string = ""
         match_string_units = ""
         for string in string_list:
@@ -164,6 +167,7 @@ class FeatureProcessor():
             
             if match:
                 match_string = string.replace(")", ") ")
+                
                 match_string = match_string.strip()
                 pattern = r"\s{2,}"
                 match_string = re.split(pattern, match_string)
@@ -178,7 +182,7 @@ class FeatureProcessor():
                         pass
             else:
                 pass
-    
+        
 
         # Regex to idenfity if there are lines with units alone
         for string in string_list:
@@ -216,10 +220,12 @@ class FeatureProcessor():
                         match_string_units.append(match_units_parenthesis)
 
                     else:
+                        match_string_units.append('')
                         pass
             except Exception:
                 # No unit was found within parenthesis
                 pass
+        if all(item == '' for item in match_string_units):
             try:
                 pattern = r"\[(.*?)\]"
                 for item in match_string:
@@ -235,6 +241,7 @@ class FeatureProcessor():
                 pass
         else:
             pass
+        
         # Regex to find acquisition depth elevation
         for string in string_list:
             regex_depth_elevation = (
@@ -395,7 +402,7 @@ class FeatureProcessor():
                 data.append(match_string)
             else:
                 pass
-
+        
         return data
 
     def verification(self, data, regex):
@@ -413,13 +420,14 @@ class FeatureProcessor():
         if correct == "Correct":
             for i in range(0, len(regex)):
                 dictionary[regex[i]] = x[:, i].tolist()
-
+        embed()
         return dictionary
 
+    #def input(self, feature):  # Main starting point
     def input(self, filepath):  # Main starting point
         #filepath = feature.getAttribute("file_path")
         filepath = filepath
-
+        #filepath = filepath
         try:
             qc_description = list()
             # Import headers and numeric columns
@@ -580,7 +588,6 @@ class FeatureProcessor():
             qc_description = (
                 str(qc_description).replace("[", "").replace("'", "").replace("]", "")
             )
-
             #feature.setAttribute("qc_description", qc_description)
         except Exception as e:
             print(f"{filepath} cannot be read. Reason: {e}")
@@ -593,7 +600,7 @@ class FeatureProcessor():
         """
         pass
 from IPython import embed
-filepath = 'G:\\Sub_Appl_Data\\WellDB\\NO\\wells\\0034\\NO 34-8-A-5 AH\\07.Borehole_Seismic\\VSP_REPORT1_ENCL5.ASC'
+filepath = 'G:\\Sub_Appl_Data\\WellDB\\GB\\wells\\0014\\GB 14-24a- 3\\07.Borehole_Seismic\\14_24a-_3_well_digital_seismic_CSHOT_FILE_236269151.xlsx'
 feature_processor = FeatureProcessor()
 feature_processor.input(filepath)
 
