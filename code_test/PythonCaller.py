@@ -149,7 +149,8 @@ class FeatureProcessor():
             if text_or_number == 'text':
                 string_list = [test.replace(",","  ").replace("nan", ".") for test in my_list]
             elif text_or_number == 'number':
-                string_list = [test.replace(",","  ").replace("nan", "-999.25") for test in my_list]  
+                string_list = [test.replace(",","  ").replace("nan", "-999.25") for test in my_list]
+            
         return string_list
 
     # Function to identify text features in the text
@@ -183,14 +184,15 @@ class FeatureProcessor():
             else:
                 pass
         
-
+        
         # Regex to idenfity if there are lines with units alone
         for string in string_list:
-            regex_pattern_units = r"(?<=\s|\]|\)|\[|\()(?P<GP1>[m|s|ms|s|m/s|ft])\s*\]?\)?\s+\(?\[?\s*(?P<GP2>[m|s|ms|s|m/s|ft])\s*\]?\)?\s*\(?\[?\s*(?P<GP3>[m|s|ms|s|m/s|ft])?\s*(?=\s|\]|\)|\[|\()"
+            regex_pattern_units = r"(?<=\s|\]|\)|\[|\()(?P<GP1>[m|s|ms|msec|s|m/s|ft])\s*\]?\)?\s+\(?\[?\s*(?P<GP2>[m|s|ms|msec|s|m/s|ft])\s*\]?\)?\s*\(?\[?\s*(?P<GP3>m|s|ms|msec|s|m/s|ft])?\s*(?=\s|\]|\)|\[|\()"
             match_units = re.search(regex_pattern_units, string, re.IGNORECASE)
             if match_units:
                 match_string_units = string.replace(")", ") ").strip()
                 match_string_units = match_string_units.strip()
+                
                 pattern_units = r"\s{2,}"
                 match_string_units = re.split(pattern_units, match_string_units)
 
@@ -225,6 +227,7 @@ class FeatureProcessor():
             except Exception:
                 # No unit was found within parenthesis
                 pass
+        
         if all(item == '' for item in match_string_units):
             try:
                 pattern = r"\[(.*?)\]"
@@ -410,9 +413,10 @@ class FeatureProcessor():
         try:  # Check if all sublists have the same length
             x = np.array(data, dtype=object)
         except Exception:
+            print("no")
             pass
         dictionary = dict()
-
+        embed()
         if len(regex) == x.shape[1]:
             correct = "Correct"
         else:
@@ -420,9 +424,10 @@ class FeatureProcessor():
         if correct == "Correct":
             for i in range(0, len(regex)):
                 dictionary[regex[i]] = x[:, i].tolist()
-        embed()
-        return dictionary
 
+        return dictionary
+    def specific_assignment(self, data, regex):
+        pass
     #def input(self, feature):  # Main starting point
     def input(self, filepath):  # Main starting point
         #filepath = feature.getAttribute("file_path")
@@ -445,8 +450,10 @@ class FeatureProcessor():
             #feature.setAttribute(
             #    "depth_reference_elevation_unit", regex_depth_elevation_unit
             #)
+
             regex_depth_reference_datum_text = dict_match["depth_reference_datum_text"]
             data = self.read_data(filepath=filepath)
+
             dict_verified = self.verification(
                 regex=dict_match["match_header"], data=data
             )
@@ -601,6 +608,8 @@ class FeatureProcessor():
         pass
 from IPython import embed
 filepath = 'G:\\Sub_Appl_Data\\WellDB\\GB\\wells\\0014\\GB 14-24a- 3\\07.Borehole_Seismic\\14_24a-_3_well_digital_seismic_CSHOT_FILE_236269151.xlsx'
+filepath2 = 'G:\\Sub_Appl_Data\\WellDB\\GB\\wells\\0014\\GB 14-30a- 4\\07.Borehole_Seismic\\25645af_CGG-Checkshot.xlsx'
+filepath3 = 'G:\\Sub_Appl_Data\\WellDB\\NO\\wells\\0001\\NO 1-3-10\\07.Borehole_Seismic\\TZV_DEPTH_MD_CHECKSHOT_2008-01-07_1.ASC'
 feature_processor = FeatureProcessor()
-feature_processor.input(filepath)
+feature_processor.input(filepath2)
 

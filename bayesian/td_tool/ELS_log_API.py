@@ -43,7 +43,7 @@ class Connection_ELS_LOG:
             els_logdata_lfp
             | where unique_wellbore_identifier == '{uwi}'
             | where isnotnull(MD) and isnotnull(TVDMSL)
-            | distinct unique_wellbore_identifier, MD, TVDMSL, LFP_VP_B, LFP_VP_LOG, LFP_VP_G, LFP_VP_O, LFP_VP_V
+            | distinct unique_wellbore_identifier, MD, TVDMSL, LFP_VP_V, LFP_VP_LOG, LFP_VP_G, LFP_VP_O, LFP_VP_B
         """
         #RESPONSE = self.KUSTO_CLIENT.execute(self.KUSTO_DATABASE, KUSTO_QUERY)
         RESPONSE = KUSTO_CLIENT_TEST.execute("ELS", KUSTO_QUERY)
@@ -66,7 +66,7 @@ def load_els_data(df_sonic, selected_log_curve):
 
     try:
         df_well_log = df_sonic.rename(columns={'TVDMSL':'tvd_ss', 'MD':'md'})
-        df_well_log = df_well_log[['unique_wellbore_identifier','md', 'tvd_ss', f"{selected_log_curve}"]]
+        df_well_log = df_well_log[['md', 'tvd_ss', f"{selected_log_curve}"]]
         df_well_log = df_well_log.dropna()        
         #selected_source_welllog = 'LFP'
         #df_well_log['source'] = selected_source_welllog
@@ -82,7 +82,7 @@ def load_els_data_fmb(df_sonic, selected_log_curve):
 
     try:
         df_well_log = df_sonic.rename(columns={'TVDMSL':'tvd_ss', 'MD':'md'})
-        df_well_log = df_well_log[['unique_wellbore_identifier','md', 'tvd_ss', f"{selected_log_curve}"]]
+        df_well_log = df_well_log[['md', 'tvd_ss', f"{selected_log_curve}"]]
         df_well_log = df_well_log.dropna()        
         #selected_source_welllog = 'LFP'
         #df_well_log['source'] = selected_source_welllog
