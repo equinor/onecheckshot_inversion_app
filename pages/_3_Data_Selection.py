@@ -21,7 +21,8 @@ from bayesian.td_tool.td_lib import getVel
 import pandas as pd
 from bayesian.td_tool.data_management_smda.connect_smda import Connection_Database, get_connect_database, generate_df
 from scipy.interpolate import interp1d
-from bayesian.td_tool.ELS_log import Connection_ELS_LOG, load_els_data, load_els_data_fmb, log_in
+from bayesian.td_tool.ELS_log_API import Connection_ELS_LOG, load_els_data, load_els_data_fmb, log_in
+from bayesian.td_tool.smda_api.els_api import get_api
 
 st.set_page_config(layout="wide")
 #raw_cks_df, df_checkshot, df_sonic = get_data()
@@ -39,7 +40,9 @@ def select_well():
     selected_value = st.selectbox(f"Select Checkshot Wellbore", options=sorted(wells))
     return selected_value
 
+
 uwi = select_well()
+
 st.write(f"Well selected: {uwi}")
 
 host, dbname, user, password, sslmode = get_connect_database()
@@ -65,54 +68,62 @@ with col1:
 
     
 with col2:
-    if "KUSTO_CLIENT_TEST" not in st.session_state:
-        KUSTO_CLIENT_TEST = log_in()
-        st.session_state.KUSTO_CLIENT_TEST = KUSTO_CLIENT_TEST
 
-    KUSTO_CLIENT_TEST = st.session_state.KUSTO_CLIENT_TEST
       
     selected_source_well_log = st.selectbox(f"Select Sonic log File Source", options=['LFP', 'FMB'])
 
     if "connection_ELS" not in st.session_state:
         st.session_state.connection_ELS = False
-
-
-    if selected_source_well_log == 'LFP':    
+    @st.cache_data
+    def api_data(uwi):
+        response, msg = get_api(uwi=uwi, selected_source_well_log=selected_source_well_log)
+        return response, msg
+    response, msg = api_data(uwi)
+    st.write(msg)
+    if selected_source_well_log == 'LFP':
         try:
             @st.cache_data
             def load_els_log(uwi):
-                connection_els = Connection_ELS_LOG()
-                df = connection_els.kusto_query_LFP(KUSTO_CLIENT_TEST, uwi)
-                st.session_state.connection_ELS = True
-                return df
+                column_names = ['MD', 'TVDMSL', 'LFP_VP_V', 'LFP_VP_LOG', 'LFP_VP_G', 'LFP_VP_O', 'LFP_VP_B']
+                
+                df_sonic_els = pd.DataFrame(response[0]['data'], columns=column_names)
+                api_connection = 'yes'
+                return df_sonic_els
             df_sonic_els = load_els_log(uwi)
+            options_log = ['LFP_VP_V', 'LFP_VP_B', 'LFP_VP_G', 'LFP_VP_O', 'LFP_VP_LOG']
+            selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
+            df_sonic = load_els_data(df_sonic_els, selected_log_curve)
+            df_sonic = df_sonic.sort_values(by=['md'])
 
         except Exception as e:
-            st.write(f'Problem with connection to ELS API. Error: {e}')
+            df_sonic = pd.DataFrame()
+            api_connection = 'no'
+    if selected_source_well_log == 'FMB':
+        st.write("No data availabe for FMB. App still testing")
+        df_sonic = pd.DataFrame()
         
-        #st.write(load_els_log(uwi, 'LFP_DT', connection_els))
-        options_log = ['LFP_VP_V', 'LFP_VP_B', 'LFP_VP_G', 'LFP_VP_O', 'LFP_VP_LOG']
-        selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
-        df_sonic = load_els_data(df_sonic_els, selected_log_curve)
-        df_sonic = df_sonic.sort_values(by=['md'])
-    elif selected_source_well_log == 'FMB':
-        try:
-            #df_sonic = pd.DataFrame()
-            @st.cache_data
-            def load_els_log(uwi):
-                connection_els = Connection_ELS_LOG()
-                df = connection_els.kusto_query_FMB(KUSTO_CLIENT_TEST, uwi)
-                st.session_state.connection_ELS = True
-                return df
-            df_sonic_els = load_els_log(uwi)
-            pass
-        except Exception as e:
-            st.write(f'Problem with connection to ELS API. Error: {e}')
-        
-        options_log = ['DT']
-        selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
-        df_sonic = load_els_data_fmb(df_sonic_els, selected_log_curve)
-        df_sonic = df_sonic.sort_values(by=['md'])
+
+
+
+
+    #elif selected_source_well_log == 'FMB':
+    #    try:
+    #        #df_sonic = pd.DataFrame()
+    #        @st.cache_data
+    #        def load_els_log(uwi):
+    #            connection_els = Connection_ELS_LOG()
+    #            df = connection_els.kusto_query_FMB(KUSTO_CLIENT_TEST, uwi)
+    #            st.session_state.connection_ELS = True
+    #            return df
+    #        df_sonic_els = load_els_log(uwi)
+    #        pass
+    #    except Exception as e:
+    #        st.write(f'Problem with connection to ELS API. Error: {e}')
+    #    
+    #    options_log = ['DT']
+    #    selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
+    #    df_sonic = load_els_data_fmb(df_sonic_els, selected_log_curve)
+    #    df_sonic = df_sonic.sort_values(by=['md'])
     
 
 col1, col2 = st.columns(2)
