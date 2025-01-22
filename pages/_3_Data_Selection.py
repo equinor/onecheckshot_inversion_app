@@ -17,19 +17,23 @@ import os
 sys.path.append(os.getcwd())
 from bayesian.td_tool.bayes_csc import getTime
 from bayesian.td_tool.td_lib import getVel
-#import bayesian.td_tool.ELS_log
+# import bayesian.td_tool.ELS_log
 import pandas as pd
 from bayesian.td_tool.data_management_smda.connect_smda import Connection_Database, get_connect_database, generate_df
 from scipy.interpolate import interp1d
-from bayesian.td_tool.ELS_log_API import Connection_ELS_LOG, load_els_data, load_els_data_fmb, log_in
+from bayesian.td_tool.ELS_log_API import (
+    Connection_ELS_LOG,
+    load_els_data,
+    load_els_data_fmb,
+)
 from bayesian.td_tool.smda_api.els_api import get_api
 
 st.set_page_config(layout="wide")
-#raw_cks_df, df_checkshot, df_sonic = get_data()
+# raw_cks_df, df_checkshot, df_sonic = get_data()
 host, dbname, user, password, sslmode = get_connect_database()
 connect = Connection_Database(host,dbname,user,password,sslmode)
 
-#database_checkshot = "smda.smda_workspace.wellbore_checkshot_data_qc"
+# database_checkshot = "smda.smda_workspace.wellbore_checkshot_data_qc"
 database_checkshot = "smda.smda_workspace.wellbore_checkshot_data"
 wells = connect.get_wells(database_checkshot)
 
@@ -50,15 +54,15 @@ host, dbname, user, password, sslmode = get_connect_database()
 columns = 'md, md_unit, tvd, tvd_ss, tvd_unit, depth_reference_elevation, depth_source, time, time_unit, source_file, unique_wellbore_identifier, average_velocity, interval_velocity, qc_description, md_increasing, tvd_ss_increasing, time_increasing, average_velocity_qc, trajectory_checked, comparison_sonic_log_qc, preference_checkshotfile'
 df = generate_df(host, dbname, user, password, sslmode, columns, database_checkshot, uwi)
 
-#df.loc[df['depth_source'].str.contains('sealevel', case=False), 'interval_velocity'] = 1479
-#df.loc[df['depth_source'].str.contains('sealevel', case=False), 'average_velocity'] = 1479
-#df.loc[df['depth_source'].str.contains('seabed', case=False), 'interval_velocity'] = 1479
-#df.loc[df['depth_source'].str.contains('seabed', case=False), 'average_velocity'] = 1479
+# df.loc[df['depth_source'].str.contains('sealevel', case=False), 'interval_velocity'] = 1479
+# df.loc[df['depth_source'].str.contains('sealevel', case=False), 'average_velocity'] = 1479
+# df.loc[df['depth_source'].str.contains('seabed', case=False), 'interval_velocity'] = 1479
+# df.loc[df['depth_source'].str.contains('seabed', case=False), 'average_velocity'] = 1479
 seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
 
 
-#seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
-#st.write(type(seabed))
+# seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
+# st.write(type(seabed))
 col1, col2 = st.columns(2)
 with col1:
     selected_source = st.selectbox(f"Select Checkshot File", options=df['source_file'].unique())
@@ -66,7 +70,7 @@ with col1:
     df = df[(df['source_file'] == selected_source) & (df['md_increasing'] == 'true')]
     df.sort_values(by=['md'], ascending=[True], inplace=True)
 
-    
+
 with col2:
 
       
@@ -124,7 +128,7 @@ with col2:
     #    selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
     #    df_sonic = load_els_data_fmb(df_sonic_els, selected_log_curve)
     #    df_sonic = df_sonic.sort_values(by=['md'])
-    
+
 
 col1, col2 = st.columns(2)
 with col1:
@@ -137,16 +141,11 @@ with col2:
     #if st.session_state.connection_ELS == True:
     #selected_source_welllog = st.selectbox(f"Select Sonic Log File", options=df_filtered['source'].unique())
         #st.write(df_sonic)    
-    
 
 
-#df_sonic = load_els_log(uwi, selected_curve_welllog, connection_els)
+# df_sonic = load_els_log(uwi, selected_curve_welllog, connection_els)
 
 td = df[['md','tvd','tvd_ss', 'depth_reference_elevation', 'time', 'qc_description', 'average_velocity', 'interval_velocity', 'md_increasing', 'tvd_ss_increasing', 'time_increasing', 'average_velocity_qc', 'trajectory_checked', 'depth_source']]
-
-
-
-
 
 
 col1, col2 = st.columns(2)
@@ -213,11 +212,11 @@ with col2:
 
     df_checkshot_plot2 = td.copy(deep=True)
 
-#continue from here
-#time_sonic = getTime(df_sonic['tvd_ss'], df_sonic['interval_velocity_sonic'])
+# continue from here
+# time_sonic = getTime(df_sonic['tvd_ss'], df_sonic['interval_velocity_sonic'])
 
-#st.write([type(x) for x in np.array(df_sonic['tvd_ss']).astype(float)])
-#st.write([type(x) for x in df_sonic['interval_velocity_sonic']])
+# st.write([type(x) for x in np.array(df_sonic['tvd_ss']).astype(float)])
+# st.write([type(x) for x in df_sonic['interval_velocity_sonic']])
 
 def decimate_dataframe(df, decimate_step):
     """Decimates a DataFrame by selecting every `decimate_step`-th row.
@@ -274,13 +273,8 @@ with col1:
             if len(st.session_state.checkshot_values_to_exclude) != 0:
                 td = td[~td['tvd_ss'].isin((st.session_state.checkshot_values_to_exclude))]
                 st.session_state['Checkshot'] = td
-                
 
 
-        
-
-        
-         
 with col2:
     try:
         depth_sonic = float(st.text_input(f"Enter depth (m) to start sonic from:", df_sonic['tvd_ss'].iloc[0]))
@@ -288,7 +282,7 @@ with col2:
     except:
         pass
 
-#embed()
+# embed()
 col3, col4 = st.columns(2)
 with col3:
     container1 = st.container()
@@ -421,5 +415,3 @@ if st.button("Save Checkshot and Sonic data:"):
     st.session_state['uwi'] = uwi
 else:
     st.write("Files not yet saved...")
-
-
