@@ -397,7 +397,13 @@ with st.form("my_form"):
                     df_well = df_well.dropna(subset=['md'])
 
                     st.write(f"Trajectory in SMDA for well {uwi} goes from MD:{df_wellbore['md'].min()}m to MD:{df_wellbore['md'].max()}m and MD missing points were interpolated from TVDSS within this interval")
-                    df_output = to_las(depth_path="MD", uwi=uwi,output_file=f"las_export/output_veltrend_test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention, md_interp=md_interp, depth_in_tvdss=np.array(df_well['tvd_ss']))
+                    df_output, las = to_las(depth_path="MD", uwi=uwi,output_file=f"las_export/output_veltrend_test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention, md_interp=md_interp, depth_in_tvdss=np.array(df_well['tvd_ss']))
+                    las.write("las_export/output_veltrend_test", version=2)
+                    #btn = st.download_button(
+                    #label="Download image",
+                    #data=las,
+                    #file_name="flower"
+                    #)
                     st.write(df_output)
                     st.write(f"Velocity Input, Velocity Extended, and Velocity Output (Bayesian) for well {uwi} were successfully exported by MD as LAS File.")
                 else:
@@ -406,7 +412,8 @@ with st.form("my_form"):
                 st.write(f"Due to an unsuccessful API connection for file {uwi}, no LAS file was generated.")
                 pass
         elif depth_export == "TVDSS":
-            df_output = to_las(depth_path="TVDSS", uwi=uwi,output_file=f"las_export/output_veltrend_test", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention)
+            df_output, las = to_las(depth_path="TVDSS", uwi=uwi,output_file=f"las_export/output_veltrend_test", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention)
+            las.write("las_export/output_veltrend_test", version=2)
             st.write(f"Velocity Input, Velocity Extended, and Velocity Output (Bayesian) for well {uwi} were successfully exported by TVDSS as LAS File.")
             st.write(df_output)
         

@@ -35,9 +35,10 @@ connect = Connection_Database(host,dbname,user,password,sslmode)
 
 # database_checkshot = "smda.smda_workspace.wellbore_checkshot_data_qc"
 database_checkshot = "smda.smda_workspace.wellbore_checkshot_data"
+database_dsa = "smda.smda_workspace.dsa_wellbore_checkshot_header"
 wells = connect.get_wells(database_checkshot)
 
-connect.close_connection()
+
 
 st.write("## Select Data")
 def select_well():
@@ -53,6 +54,12 @@ host, dbname, user, password, sslmode = get_connect_database()
 
 columns = 'md, md_unit, tvd, tvd_ss, tvd_unit, depth_reference_elevation, depth_source, time, time_unit, source_file, unique_wellbore_identifier, average_velocity, interval_velocity, qc_description, md_increasing, tvd_ss_increasing, time_increasing, average_velocity_qc, trajectory_checked, comparison_sonic_log_qc, preference_checkshotfile'
 df = generate_df(host, dbname, user, password, sslmode, columns, database_checkshot, uwi)
+df_dsa = generate_df(host, dbname, user, password, sslmode, '*', database_dsa, uwi)
+connect.close_connection()
+#df.loc[df['depth_source'].str.contains('sealevel', case=False), 'interval_velocity'] = 1479
+#df.loc[df['depth_source'].str.contains('sealevel', case=False), 'average_velocity'] = 1479
+#df.loc[df['depth_source'].str.contains('seabed', case=False), 'interval_velocity'] = 1479
+#df.loc[df['depth_source'].str.contains('seabed', case=False), 'average_velocity'] = 1479
 
 # df.loc[df['depth_source'].str.contains('sealevel', case=False), 'interval_velocity'] = 1479
 # df.loc[df['depth_source'].str.contains('sealevel', case=False), 'average_velocity'] = 1479
@@ -61,8 +68,8 @@ df = generate_df(host, dbname, user, password, sslmode, columns, database_checks
 seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
 
 
-# seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
-# st.write(type(seabed))
+#seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
+#st.write(type(seabed))
 col1, col2 = st.columns(2)
 with col1:
     selected_source = st.selectbox(f"Select Checkshot File", options=df['source_file'].unique())
@@ -103,6 +110,7 @@ with col2:
             df_sonic = pd.DataFrame()
             api_connection = 'no'
     if selected_source_well_log == 'FMB':
+        
         st.write("No data availabe for FMB. App still testing")
         df_sonic = pd.DataFrame()
         
@@ -148,6 +156,34 @@ with col2:
 td = df[['md','tvd','tvd_ss', 'depth_reference_elevation', 'time', 'qc_description', 'average_velocity', 'interval_velocity', 'md_increasing', 'tvd_ss_increasing', 'time_increasing', 'average_velocity_qc', 'trajectory_checked', 'depth_source']]
 
 
+def color_cells(val):
+  """
+  Styles the cell background color based on the value.
+
+  Args:
+    val: The value in the cell.
+
+  Returns:
+    The CSS style for the cell background.
+  """
+  if val == 0:
+    color = 'green'
+  else:
+    color = 'red'
+  return f'background-color: {color}'
+
+def display_table(df):
+  """
+  Displays the DataFrame with colored cells using Streamlit.
+
+  Args:
+    df: The pandas DataFrame to display.
+  """
+  styled_df = df.style.applymap(color_cells)
+  st.dataframe(styled_df, width=None)
+
+
+
 col1, col2 = st.columns(2)
 with col1:
     col1_1, col1_2 = st.columns(2)
@@ -166,6 +202,7 @@ with col1:
         yaxis_range=[max(td["tvd_ss"]), min(td["tvd_ss"])],
         )
         st.plotly_chart(fig1_1)
+
 
     with col1_2:
         fig1_2 = go.Figure()
@@ -193,6 +230,13 @@ with col1:
         )
         fig1_2.update_yaxes(visible=False, showticklabels=False)
         st.plotly_chart(fig1_2)
+    
+st.write("## Onecheckshot DSA QC")
+columns_dsa = ['md_data_missing', 'tvd_data_missing', 'twt_data_missing', 'twt_higher_than_max', 'not_enough_stations', 'file_unavailable_welldb', 'file_unavailable_smda', 'depth_discrepancy_below_cutoff', 'incorrect_datum', 'station_density_below_cutoff', 'uniqueness_below_cutoff', 'tvd_ss_not_increasing', 'twt_not_increasing', 'high_average_velocities', 'low_average_velocities']
+df_dsa = df_dsa[columns_dsa]
+st.dataframe(display_table(df_dsa))
+
+
 with col2:
     try:
         fig2 = px.line(df_sonic, x="interval_velocity_sonic", y="tvd_ss")  # Replace "x_column" and "y_column" with the appropriate column names from df_2   

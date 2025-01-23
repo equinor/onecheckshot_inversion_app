@@ -51,11 +51,6 @@ def interpolate_with_extrapolation_and_null_check(A, B):
 
 def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output, depth_step, depth_export,answer_depth_convention,md_interp=None,depth_in_tvdss=None, null_value=-999.25):
 
-    print("HERE",len(pd.DataFrame(depth_in, depth_in_tvdss)[1:]),len(pd.DataFrame(depth_in_tvdss, depth_in)) )
-    
-    
-
-
     # create output depth curve
     if depth_step is not False:
         depth = np.arange(depth_in[0], depth_in[-1] + depth_step, depth_step)
@@ -137,7 +132,7 @@ def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output, dept
         df_output.insert(loc=1, column='TVDSS', value=depth_tvdss)
     # write file
     las.write(output_file, version=2)
-    return df_output
+    return df_output, las
 
 def to_sgy(
     output_file, traces_x, traces_y, traces, il_const=1000, xl_const=2000,
