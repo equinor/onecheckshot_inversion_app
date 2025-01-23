@@ -138,6 +138,9 @@ if "button_clicked" not in st.session_state:
 if "button_clicked2" not in st.session_state:
     st.session_state.button_clicked2 = False
 
+if "button_curve_generated" not in st.session_state:
+    st.session_state.button_curve_generated = False
+
 def callback():
     st.session_state.button_clicked = True
 def callback2():
@@ -379,8 +382,9 @@ with st.form("my_form"):
         depth_step = float(depth_step)
     else:
         depth_step = False
-    submitted = st.form_submit_button("Generate LAS file", on_click=callback3)      
+    submitted = st.form_submit_button("Select parameters and generate data", on_click=callback3)      
     if submitted:
+        st.session_state.button_curve_generated = True
         if depth_export == "MD and TVDSS":
             results_api, msg = get_wellbore_trajectory(uwi=uwi)
             if results_api:
@@ -388,33 +392,49 @@ with st.form("my_form"):
                     
 
                     df_wellbore = pd.DataFrame(results_api['data']['results'])
+
                     df_wellbore = df_wellbore.sort_values(by='md')
-                    md_interp = interp1d(df_wellbore['md'], df_wellbore['tvd_msl'], kind='linear', fill_value=np.nan, bounds_error=False)
+
+                    md_interp = interp1d(df_wellbore['tvd_msl'], df_wellbore['md'], kind='linear', fill_value=np.nan, bounds_error=False)
+                    #interp1_above_msl = interp1d([x1_interval1, x2_interval1], [y1_interval1, y2_interval1], kind='linear', fill_value='extrapolate')
                     missing_md_indices = df_well['md'].isnull()
+                     
                     df_well.loc[missing_md_indices, 'md'] = md_interp(df_well.loc[missing_md_indices, 'tvd_ss'])
+                
+
                     if df_well['md'].isnull().any():
                         st.write(f"Warning: The following TVDSS values could not be calculated because these are out of range from wellbore trajectory in SMDA: {df_well[df_well['md'].isnull()]['tvd_ss'].values}")
                     df_well = df_well.dropna(subset=['md'])
 
                     st.write(f"Trajectory in SMDA for well {uwi} goes from MD:{df_wellbore['md'].min()}m to MD:{df_wellbore['md'].max()}m and MD missing points were interpolated from TVDSS within this interval")
-                    df_output, las = to_las(depth_path="MD", uwi=uwi,output_file=f"las_export/output_veltrend_test", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention, md_interp=md_interp, depth_in_tvdss=np.array(df_well['tvd_ss']))
-                    las.write("las_export/output_veltrend_test", version=2)
-                    #btn = st.download_button(
-                    #label="Download image",
-                    #data=las,
-                    #file_name="flower"
-                    #)
+                    df_output, las = to_las(depth_path="MD", uwi=uwi,output_file=f"las_export/output_veltrend_{uwi.replace(" ","_").replace("/","-")}", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention, md_interp=md_interp, depth_in_tvdss=np.array(df_well['tvd_ss']))
                     st.write(df_output)
+                    
+
                     st.write(f"Velocity Input, Velocity Extended, and Velocity Output (Bayesian) for well {uwi} were successfully exported by MD as LAS File.")
+                    st.write(f"You can download the file clicking on the button below")
                 else:
                     st.write(f"No wellbore trajectory data from SMDA plan survey samples for file {uwi}. It is not possible to convert TVDSS to MD. No LAS file is outputted")
             else:
                 st.write(f"Due to an unsuccessful API connection for file {uwi}, no LAS file was generated.")
                 pass
         elif depth_export == "TVDSS":
-            df_output, las = to_las(depth_path="TVDSS", uwi=uwi,output_file=f"las_export/output_veltrend_test", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention)
+            df_output, las = to_las(depth_path="TVDSS", uwi=uwi,output_file=f"las_export/output_veltrend_{uwi.replace(" ","_").replace("/","-")}", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention)
             las.write("las_export/output_veltrend_test", version=2)
             st.write(f"Velocity Input, Velocity Extended, and Velocity Output (Bayesian) for well {uwi} were successfully exported by TVDSS as LAS File.")
             st.write(df_output)
+
+if st.session_state.button_curve_generated is True: 
+    with open(f"las_export/output_veltrend_{uwi.replace(" ","_").replace("/","-")}", "rb") as f:
+        st.download_button(
+        label="Download LAS File",
+        data=f,
+        file_name=f"output_veltrend_{uwi.replace(" ","_").replace("/","-")}",
+        mime="application/octet-stream",
+        on_click=callback3 
+    )
+    st.session_state.button_curve_generated = False
+
+        
         
 
