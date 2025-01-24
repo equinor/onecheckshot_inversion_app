@@ -1,6 +1,6 @@
-# :earth_americas: GDP dashboard template
+# :earth_americas: Tidee Application
 
-A simple Streamlit app showing the GDP of different countries in the world.
+A SMDA application that generates velocity trends using sonic log and checkshot data from cloud.
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://gdp-dashboard-template.streamlit.app/)
 
@@ -11,7 +11,7 @@ A simple Streamlit app showing the GDP of different countries in the world.
    ```
    $ pip install -r requirements.txt
    ```
-2. Add a folder called smda_password on the main .\onecheckshot_inversion_app page with a config.yaml file containing smda user and password.
+2. Add a folder called smda_password on the main .\onecheckshot_inversion_app page with a config.yaml, els_api.yaml, and smda_api.yaml file containing user and password for smda and els api's.
 
 2. Go to .\onecheckshot_inversion_app in powershell and run:
 
@@ -20,3 +20,6 @@ A simple Streamlit app showing the GDP of different countries in the world.
    ```
 
 3. The App page will open.
+
+4. In order to update the repo in azure, run:
+az acr build --registry tidee --image onecheckshot_inversion_app:latest --file Dockerfile .
