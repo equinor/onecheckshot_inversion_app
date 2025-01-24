@@ -86,17 +86,16 @@ with col2:
     if "connection_ELS" not in st.session_state:
         st.session_state.connection_ELS = False
     @st.cache_data
-    def api_data(uwi):
+    def api_data(uwi, selected_source_well_log):
         response, msg = get_api(uwi=uwi, selected_source_well_log=selected_source_well_log)
         return response, msg
-    response, msg = api_data(uwi)
-    st.write(msg)
+    response, msg = api_data(uwi, selected_source_well_log)
+
     if selected_source_well_log == 'LFP':
         try:
             @st.cache_data
             def load_els_log(uwi):
                 column_names = ['MD', 'TVDMSL', 'LFP_VP_V', 'LFP_VP_LOG', 'LFP_VP_G', 'LFP_VP_O', 'LFP_VP_B']
-                
                 df_sonic_els = pd.DataFrame(response[0]['data'], columns=column_names)
                 api_connection = 'yes'
                 return df_sonic_els
@@ -109,11 +108,23 @@ with col2:
         except Exception as e:
             df_sonic = pd.DataFrame()
             api_connection = 'no'
-    if selected_source_well_log == 'FMB':
-        
-        st.write("No data availabe for FMB. App still testing")
-        df_sonic = pd.DataFrame()
-        
+    elif selected_source_well_log == 'FMB':
+        try:
+            @st.cache_data
+            def load_fmb_log(uwi):
+                column_names = ['MD', 'TVDMSL', 'DT']  
+                df_sonic_fmb = pd.DataFrame(response[0]['data'], columns=column_names)
+                return df_sonic_fmb 
+            df_sonic_fmb = load_fmb_log(uwi)
+            options_log = ['DT']
+            selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
+            df_sonic = load_els_data_fmb(df_sonic_fmb, selected_log_curve)
+            #st.write("No data availabe for FMB. App still testing")
+            #df_sonic = df_sonic_fmb
+
+        except Exception as e:
+            df_sonic = pd.DataFrame()
+            api_connection = 'no'        
 
 
 

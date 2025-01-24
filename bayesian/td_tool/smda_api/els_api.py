@@ -78,7 +78,7 @@ def get_api(uwi, selected_source_well_log):
     if selected_source_well_log == 'LFP':
         API_ENDPOINT = f"https://api.gateway.equinor.com/els/curves/data?source=LFP&unique_wellbore_identifier={encoded_uwi}&curve_identifier=MD,%20TVDMSL,%20LFP_VP_V,%20LFP_VP_LOG,%20LFP_VP_G,%20LFP_VP_O,%20LFP_VP_B"
     elif selected_source_well_log == 'FMB':
-        API_ENDPOINT = f"https://api.gateway.equinor.com/els/curves/data?source=LFP&unique_wellbore_identifier={encoded_uwi}&curve_identifier=MD,%20TVDMSL,%20LFP_VP_V,%20LFP_VP_LOG,%20LFP_VP_G,%20LFP_VP_O,%20LFP_VP_B"
+        API_ENDPOINT = f"https://api.gateway.equinor.com/els/curves/data?source=FMB&unique_wellbore_identifier={encoded_uwi}&curve_identifier=MD,%20TVDMSL,%20DT"
     c = ElsApiClient()
     response, msg = c.get_wellbore_plan(API_ENDPOINT)
     return response, msg

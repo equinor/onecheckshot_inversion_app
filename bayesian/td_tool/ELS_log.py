@@ -68,8 +68,6 @@ def load_els_data(df_sonic, selected_log_curve):
         df_well_log = df_sonic.rename(columns={'TVDMSL':'tvd_ss', 'MD':'md'})
         df_well_log = df_well_log[['unique_wellbore_identifier','md', 'tvd_ss', f"{selected_log_curve}"]]
         df_well_log = df_well_log.dropna()        
-        #selected_source_welllog = 'LFP'
-        #df_well_log['source'] = selected_source_welllog
         df_well_log['interval_velocity_sonic'] = df_well_log[f"{selected_log_curve}"]
         return df_well_log
 
@@ -84,8 +82,6 @@ def load_els_data_fmb(df_sonic, selected_log_curve):
         df_well_log = df_sonic.rename(columns={'TVDMSL':'tvd_ss', 'MD':'md'})
         df_well_log = df_well_log[['unique_wellbore_identifier','md', 'tvd_ss', f"{selected_log_curve}"]]
         df_well_log = df_well_log.dropna()        
-        #selected_source_welllog = 'LFP'
-        #df_well_log['source'] = selected_source_welllog
         df_well_log['interval_velocity_sonic'] = [0.3048/(float(sonic)*0.000001) if sonic != 0 else 0 for sonic in df_well_log[f'{selected_log_curve}']]
         return df_well_log
 
