@@ -263,59 +263,45 @@ if (st.session_state.button_clicked == True) or (st.session_state.button_clicked
     with col4_legend:
         st.write("Figure 5. plot shows the difference between the updated velocity trend and the one only using sonic log data interpolated to the seabed.")
 
+    col4_plot, col5_plot = st.columns(2)
+    with col4_plot:
+        st.write("## Time Domain")
 
-    col4, col5 = st.columns(2)
-    with col4:
-        fig4 = go.Figure()
-        fig4.add_trace(go.Line(x=1e3 * well_t_ext, y=well_z, line=dict(color='green'), name='TWT Prior'))
-        fig4.add_trace(go.Line(x=1e3 * well_t, y=well_z, line=dict(color='blue'),  name='TWT Posterior'))
-        fig4.add_trace(go.Scatter(x=1e3 * td_t, y=td_z, mode='markers', line=dict(color='red'),  name='TWT Checkshot'))
-        fig4.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed'))
-        fig4.update_xaxes(title_text='ms')
+    with col5_plot:
+        st.write("## Drift")
 
-        fig4.update_layout(
-        title=f'Time Domain',
-        xaxis_title="TWT (ms)",
-        yaxis_title='TVDSS (m)',
-        autosize=False,
-        width=900,
-        height=1200,
-        xaxis_range=[-100, np.max(1e3 * well_t) * 1.1],
-        yaxis_range=[0,yr],
-        yaxis=dict(autorange='reversed'),
-        legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)
-        st.plotly_chart(fig4)
+    fig4_5 = make_subplots(rows=1, cols=2, shared_yaxes=True)
+    fig4_5.add_trace(go.Line(x=1e3 * well_t_ext, y=well_z, line=dict(color='green'), name='TWT Prior', legendgroup='1'), row=1, col=1)
+    fig4_5.add_trace(go.Line(x=1e3 * well_t, y=well_z, line=dict(color='blue'),  name='TWT Posterior', legendgroup='1'), row=1, col=1)
+    fig4_5.add_trace(go.Scatter(x=1e3 * td_t, y=td_z, mode='markers', line=dict(color='red'),  name='TWT Checkshot', legendgroup='1'), row=1, col=1)
+    fig4_5.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed', legendgroup='1'), row=1, col=1)
+    fig4_5.update_xaxes(title_text='ms', row=1, col=1)
+    fig4_5.update_xaxes(title_text="TWT (ms)", range =[-100, np.max(1e3 * well_t) * 1.1], row=1, col=1)
+    fig4_5.update_yaxes(title_text="TVDSS (m)", range =[0,yr], row=1, col=1)
 
-    with col5:
-        fig5 = go.Figure()
-        fig5.add_trace(go.Line(x=1e3 * td_drift_t_ext, y=td_z, line=dict(color='green'), legendgroup="4", name='Drift Prior'))
-        fig5.add_trace(go.Line(x=1e3 * td_drift_t, y=td_z, line=dict(color='blue'), legendgroup="4", name='Drift Posterior'))
-        xx = np.insert(well_drift_t, 0, well_drift_t_ext)
-        xx = xx[~np.isnan(xx)]
-        fig5.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed'))
-        fig5.update_yaxes(title_text="Y-axis 1")
-        fig5.update_xaxes(title_text="DRIFT (OWT)")
-        fig5.add_vline(x=0, line_width=1, line_color="black")
-
-        fig5.update_layout(
-        title=f"DRIFT",
-        xaxis_title="TWT (ms)",
-        yaxis_title='TVDSS (m)',
-        autosize=False,
-        width=900,
-        height=1200,
-        xaxis_range=[1e3 * np.min(xx) - 3, 1e3 * np.max(xx) + 3],
-        yaxis_range=[0,yr],
-        yaxis=dict(autorange='reversed'),
-        legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)
-        st.plotly_chart(fig5)
-
+    fig4_5.add_trace(go.Line(x=1e3 * td_drift_t_ext, y=td_z, line=dict(color='green'), name='Drift Prior', legendgroup='2'), row=1, col=2)
+    fig4_5.add_trace(go.Line(x=1e3 * td_drift_t, y=td_z, line=dict(color='blue'), name='Drift Posterior', legendgroup='2'), row=1, col=2)
+    xx = np.insert(well_drift_t, 0, well_drift_t_ext)
+    xx = xx[~np.isnan(xx)]
+    fig4_5.add_trace(go.Scatter(x=[-1e4, 1e4], y=[water_depth, water_depth], mode='lines',line=dict(color='black', dash='dash'), name='Seabed', legendgroup='2'), row=1, col=2)
+    fig4_5.add_vline(x=0, line_width=1, line_color="black", row=1, col=2, legendgroup='2')
+    fig4_5.update_xaxes(title_text="TWT (ms)", range =[1e3 * np.min(xx) - 3, 1e3 * np.max(xx) + 3], row=1, col=2)
+    fig4_5.update_yaxes(title_text="", range =[0,yr], row=1, col=2)
+    
+    fig4_5.update_layout(
+    autosize=False,
+    width=900,
+    height=1200,
+    yaxis=dict(autorange='reversed'),
+    legend=dict(orientation="h",xanchor = "center",x = 0.5),legend_tracegroupgap=300)    
+    st.plotly_chart(fig4_5, use_container_width=True)
     col4_legend, col5_legend = st.columns(2)
     with col4_legend:
         st.write("Figure 6. Plot showing the cumulative two-way travel times for checkshot data, posterior velocity model, and prior velocity model.")
     with col5_legend:
         st.write("Figure 7. The difference between the integrated sonic log and the checkshot in time is known as the drift curve. It is supposed that the drift between the new time-depth curve from bayesian inversion is smaller than the one coming from sonic log alone.")
 
+    
     import plotly.figure_factory as ff
     with col2:
             if st.button("Display Advanced Parameters", on_click=callback2):
@@ -407,7 +393,7 @@ with st.form("my_form"):
                     df_well = df_well.dropna(subset=['md'])
 
                     st.write(f"Trajectory in SMDA for well {uwi} goes from MD:{df_wellbore['md'].min()}m to MD:{df_wellbore['md'].max()}m and MD missing points were interpolated from TVDSS within this interval")
-                    df_output, las = to_las(depth_path="MD", uwi=uwi,output_file=f"las_export/output_veltrend_{uwi.replace(" ","_").replace("/","-")}", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention, md_interp=md_interp, depth_in_tvdss=np.array(df_well['tvd_ss']))
+                    df_output, las = to_las(depth_path="MD", uwi=uwi,output_file=f"las_export/output_veltrend", depth_in=np.array(df_well['md']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention, md_interp=md_interp, depth_in_tvdss=np.array(df_well['tvd_ss']))
                     st.write(df_output)
                     
 
@@ -420,16 +406,16 @@ with st.form("my_form"):
                 pass
         elif depth_export == "TVDSS":
             df_output, las = to_las(depth_path="TVDSS", uwi=uwi,output_file=f"las_export/output_veltrend_{uwi.replace(" ","_").replace("/","-")}", depth_in=np.array(df_well['tvd_ss']), vp_input =np.array(df_well['VP_IN']), vp_ext=np.array(df_well['VP_EXT']),vp_output=np.array(df_well['VP_BAYES']), depth_step=depth_step, depth_export=depth_export, answer_depth_convention=answer_depth_convention)
-            las.write("las_export/output_veltrend_test", version=2)
+            las.write("las_export/output_veltrend", version=2)
             st.write(f"Velocity Input, Velocity Extended, and Velocity Output (Bayesian) for well {uwi} were successfully exported by TVDSS as LAS File.")
             st.write(df_output)
 
 if st.session_state.button_curve_generated is True: 
-    with open(f"las_export/output_veltrend_{uwi.replace(" ","_").replace("/","-")}", "rb") as f:
+    with open(f"las_export/output_veltrend", "rb") as f:
         st.download_button(
         label="Download LAS File",
         data=f,
-        file_name=f"output_veltrend_{uwi.replace(" ","_").replace("/","-")}",
+        file_name=f"output_veltrend_{uwi.replace(" ","_").replace("/","-")}.las",
         mime="application/octet-stream",
         on_click=callback3 
     )
