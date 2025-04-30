@@ -21,5 +21,7 @@ A SMDA application that generates velocity trends using sonic log and checkshot 
 
 3. The App page will open.
 
-4. In order to update the repo in azure, run:
+4. Once you check everything is working as expected locally, you can go to docker-compose.yml and use "Compose Up". Please verify that the image is working correctly in Docker Desktop and that you are logged in on the right azure subscription (use az login for this purpose). Then, one can go to the docker section in VSCode and push the image to Azure registry.
+
+4.2. Another command that can work is the following:
 az acr build --registry tidee --image onecheckshot_inversion_app:latest --file Dockerfile .
