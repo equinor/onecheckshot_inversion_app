@@ -1,5 +1,4 @@
 import sys
-print(sys.path)
 import yaml
 import pandas as pd
 import psycopg2
@@ -32,7 +31,7 @@ class Connection_Database:
     self.conn.close()
 
 def get_connect_database():
-  config_file = os.path.join(os.getcwd(),"bayesian","td_tool","data_management_smda","smda_password","config.yaml")
+  config_file = os.path.join(os.getcwd(),"smda_password","config.yaml")
   with open(config_file, "r") as file:
     config = yaml.safe_load(file)
   host = config['host']
@@ -44,7 +43,6 @@ def get_connect_database():
 
 host, dbname, user, password, sslmode = get_connect_database()
 
-from IPython import embed
 def generate_df(host, dbname, user, password, sslmode, columns, database, uwi):
   connect = Connection_Database(host,dbname,user,password,sslmode)
   df = connect.connect_database(columns=columns, database= database, uwi = uwi)
