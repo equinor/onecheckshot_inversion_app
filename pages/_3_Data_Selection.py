@@ -243,7 +243,7 @@ with col1:
         st.plotly_chart(fig1_2)
     
 st.write("## Onecheckshot DSA QC")
-columns_dsa = ['md_data_missing', 'tvd_data_missing', 'twt_data_missing', 'twt_higher_than_max', 'not_enough_stations', 'file_unavailable_welldb', 'file_unavailable_smda', 'depth_discrepancy_below_cutoff', 'incorrect_datum', 'station_density_below_cutoff', 'uniqueness_below_cutoff', 'tvd_ss_not_increasing', 'twt_not_increasing', 'high_average_velocities', 'low_average_velocities']
+columns_dsa = ['md_data_missing', 'tvd_ss_data_missing', 'twt_data_missing', 'twt_higher_than_max', 'not_enough_stations', 'file_unavailable_welldb', 'file_unavailable_smda', 'depth_discrepancy_below_cutoff', 'incorrect_datum', 'station_density_below_cutoff', 'uniqueness_below_cutoff', 'tvd_ss_not_increasing', 'twt_not_increasing', 'high_average_velocities', 'low_average_velocities']
 df_dsa = df_dsa[columns_dsa]
 st.dataframe(display_table(df_dsa))
 
