@@ -100,6 +100,7 @@ class Run_Bayesian:
     def runCsc(self, well_z_in, well_vp_in, td_z_in, td_t_in, par):
         from bayesian.td_tool.td_lib import getVel, getDrift
         from bayesian.td_tool.bayes_csc import getTime
+
         # run_2 = self.test(self, well_z_in, well_vp_in, td_z_in, td_t_in, par)
         ##########################
         # REDATUM to start depth #

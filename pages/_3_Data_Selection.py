@@ -238,11 +238,11 @@ with col1:
         ]
         for col in qc:
             colors = [
-                "green"
-                if (b == "true" or b == "passed")
-                else "gray"
-                if (b == "not checked")
-                else "red"
+                (
+                    "green"
+                    if (b == "true" or b == "passed")
+                    else "gray" if (b == "not checked") else "red"
+                )
                 for b in td[col]
             ]
             fig1_2.add_trace(
