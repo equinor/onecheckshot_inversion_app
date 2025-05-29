@@ -16,7 +16,7 @@ A SMDA application that generates velocity trends using sonic log and checkshot 
 2. Go to .\onecheckshot_inversion_app in powershell and run:
 
    ```
-   streamlit run _1_Introduction_Onecheckshot.py
+   streamlit run _1_Introduction_tidee.py
    ```
 
 3. The App page will open.
