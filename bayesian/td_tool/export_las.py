@@ -7,6 +7,7 @@ import segyio
 import lasio
 import pandas as pd
 
+
 def resample_log(zz, val, zz_out):
     ff = interp1d(zz, val, kind="next", bounds_error=False, fill_value=np.nan)
     return ff(zz_out)
@@ -14,8 +15,8 @@ def resample_log(zz, val, zz_out):
 
 def interpolate_with_extrapolation_and_null_check(A, B):
     """
-    Creates a linear interpolation function that calculates B from A 
-    using interp1d, extrapolates to values out of range, 
+    Creates a linear interpolation function that calculates B from A
+    using interp1d, extrapolates to values out of range,
     and returns Null if B values are below 0.
 
     Args:
@@ -23,12 +24,12 @@ def interpolate_with_extrapolation_and_null_check(A, B):
       B: numpy array of dependent variable values.
 
     Returns:
-      A function that takes an array of A values as input 
+      A function that takes an array of A values as input
       and returns the interpolated B values.
     """
 
     # Create the interpolation function with extrapolation
-    f = interp1d(A, B, kind='linear', fill_value='extrapolate') 
+    f = interp1d(A, B, kind="linear", fill_value="extrapolate")
 
     def interpolate_and_check(A_new):
         """
@@ -38,7 +39,7 @@ def interpolate_with_extrapolation_and_null_check(A, B):
           A_new: numpy array of new A values.
 
         Returns:
-          A numpy array of interpolated B values, 
+          A numpy array of interpolated B values,
           or Null if any interpolated B value is below 0.
         """
         B_new = f(A_new)
@@ -49,8 +50,22 @@ def interpolate_with_extrapolation_and_null_check(A, B):
 
     return interpolate_and_check
 
-def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output, depth_step, depth_export,answer_depth_convention,md_interp=None,depth_in_tvdss=None, null_value=-999.25):
 
+def to_las(
+    depth_path,
+    uwi,
+    output_file,
+    depth_in,
+    vp_input,
+    vp_ext,
+    vp_output,
+    depth_step,
+    depth_export,
+    answer_depth_convention,
+    md_interp=None,
+    depth_in_tvdss=None,
+    null_value=-999.25,
+):
     # create output depth curve
     if depth_step is not False:
         depth = np.arange(depth_in[0], depth_in[-1] + depth_step, depth_step)
@@ -58,7 +73,13 @@ def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output, dept
     else:
         depth = depth_in
     if depth_path == "MD":
-        md_to_tvdss = interp1d(depth_in, depth_in_tvdss, kind='linear', fill_value=np.nan, bounds_error=False)
+        md_to_tvdss = interp1d(
+            depth_in,
+            depth_in_tvdss,
+            kind="linear",
+            fill_value=np.nan,
+            bounds_error=False,
+        )
         depth_tvdss = md_to_tvdss(depth)
 
     # initiate LAS-file
@@ -71,32 +92,25 @@ def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output, dept
     )
 
     # values
-    log_name = ["vp_input", "vp_ext","vp_output"]
+    log_name = ["vp_input", "vp_ext", "vp_output"]
     log_unit = ["m/s", "m/s", "m/s"]
-    log_descr = [
-        "Vp_Input",
-        "Vp_Extended",
-        "Vp_Output_Bayesian"
-    ]
+    log_descr = ["Vp_Input", "Vp_Extended", "Vp_Output_Bayesian"]
     nlog = len(log_name)
 
     # add depth curves to LAS
 
-
-    #las.add_curve("TVD", depth, unit="m", descr="True Vertical Depth KB")
-    #las.add_curve("TVDMSL", depth, unit="m", descr="True Vertical Depth Mean Sea Level")
+    # las.add_curve("TVD", depth, unit="m", descr="True Vertical Depth KB")
+    # las.add_curve("TVDMSL", depth, unit="m", descr="True Vertical Depth Mean Sea Level")
 
     # loop through data columns and add
     # las.add_curve('VP', resample_log(depth_in, vp, depth), unit='m/s', descr = 'P-velocity')
     dict_data = dict()
     for ii in np.arange(nlog):
-
         # get data
         val_in = eval(log_name[ii])
 
         # check if log is empty
         if len(val_in) > 0:
-
             # resample
             val = resample_log(depth_in, val_in, depth)
 
@@ -108,7 +122,10 @@ def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output, dept
             # add to las
             dict_data[log_name[ii].upper()] = [val, log_unit[ii], log_descr[ii]]
     print(answer_depth_convention)
-    if answer_depth_convention == "Depth values above MSL are positive, while depth values below MSL are negative.":
+    if (
+        answer_depth_convention
+        == "Depth values above MSL are positive, while depth values below MSL are negative."
+    ):
         depth = -depth
         if depth_path == "MD":
             depth_tvdss = -depth_tvdss
@@ -118,26 +135,38 @@ def to_las(depth_path, uwi,output_file, depth_in,vp_input,vp_ext,vp_output, dept
 
     if depth_path == "MD":
         las.append_curve("DEPTH", depth, unit="m", descr="Measured Depth")
-        las.append_curve("DEPTH_TVDSS", depth_tvdss, unit="m", descr="True Vertical Depth SubSea")
+        las.append_curve(
+            "DEPTH_TVDSS", depth_tvdss, unit="m", descr="True Vertical Depth SubSea"
+        )
     elif depth_path == "TVDSS":
         las.append_curve("DEPTH", depth, unit="m", descr="True Vertical Depth SubSea")
-            
+
     for log_curve in dict_data.keys():
-            las.append_curve(log_curve, dict_data[log_curve][0], unit=dict_data[log_curve][1], descr=dict_data[log_curve][2])
-    
+        las.append_curve(
+            log_curve,
+            dict_data[log_curve][0],
+            unit=dict_data[log_curve][1],
+            descr=dict_data[log_curve][2],
+        )
+
     new_dict_data = {key: value[0] for key, value in dict_data.items()}
     df_output = pd.DataFrame(new_dict_data)
     df_output.insert(loc=0, column=depth_path, value=depth)
     if depth_path == "MD":
-        df_output.insert(loc=1, column='TVDSS', value=depth_tvdss)
+        df_output.insert(loc=1, column="TVDSS", value=depth_tvdss)
     # write file
     las.write(output_file, version=2)
     return df_output, las
 
-def to_sgy(
-    output_file, traces_x, traces_y, traces, il_const=1000, xl_const=2000,
-):
 
+def to_sgy(
+    output_file,
+    traces_x,
+    traces_y,
+    traces,
+    il_const=1000,
+    xl_const=2000,
+):
     spec = segyio.spec()
 
     # issue warning if negative time/depth values
@@ -156,10 +185,8 @@ def to_sgy(
 
     # add trace data
     with segyio.create(output_file, spec) as f:
-
         # loop over input traces
         for itr in np.arange(ntr):
-
             # trace header
             f.header[itr] = {
                 segyio.su.offset: traces_x[itr],
@@ -174,7 +201,6 @@ def to_sgy(
 
 
 def get_image_edges(xx, yy):
-
     # get image edges
     dy = yy[1] - yy[0]
     dx = xx[1] - xx[0]
@@ -199,7 +225,6 @@ def plot_image(
     upscaling_x=4,
     upscaling_y=8,
 ):
-
     # get colormap
     cmap = get_colormap(color_map_name, reverse=color_map_reverse)
 
@@ -268,7 +293,6 @@ def get_image(
     upscaling_x=4,
     upscaling_y=8,
 ):
-
     # plot image
     plot_image(
         traces_x,
@@ -306,7 +330,6 @@ def to_png(
     upscaling_x=4,
     upscaling_y=8,
 ):
-
     # plot image
     plot_image(
         traces_x,

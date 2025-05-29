@@ -1,4 +1,5 @@
 import setuptools
+
 long_description = """
 # TD Tools
 """
@@ -15,9 +16,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/dischler/td_tools",
     packages=setuptools.find_packages(exclude=[]),
-    install_requires=[
-        "numpy","pandas","scipy"
-    ],
+    install_requires=["numpy", "pandas", "scipy"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",

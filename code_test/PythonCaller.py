@@ -2,8 +2,10 @@ import numpy as np
 import pandas as pd
 import re
 
+
 def processFeature(feature):
     pass
+
 
 # class to rename the header names
 class Rename_functions:
@@ -32,7 +34,7 @@ class Rename_functions:
             "TC": "OWT",
             "One-Way Vertical Time": "OWT",
             "One Way Time": "OWT",
-            "Two Way Time":"TWT"
+            "Two Way Time": "TWT",
         }
         # Dictionary to rename depth reference datum
         self.rename_depth_reference_datum = {
@@ -86,13 +88,12 @@ class Rename_functions:
         for c in chars:
             key = key.replace(c, "")
         return self.rename_depth_reference_point.get(key, None)
-    
+
     def interpret_time(self, key):
         key = key
 
 
-
-class FeatureProcessor():
+class FeatureProcessor:
     """Template Class Interface:
     When using this class, make sure its name is set as the value of the 'Class
     to Process Features' transformer parameter.
@@ -116,59 +117,75 @@ class FeatureProcessor():
                 )
                 pass
         return df
-    
+
     def extract_data(self, filepath, text_or_number):
-        if filepath.lower().endswith('.txt'):
+        if filepath.lower().endswith(".txt"):
             try:
-                with open(filepath, 'r') as file:
+                with open(filepath, "r") as file:
                     contents = file.read()
             except FileNotFoundError:
                 print("File not found.")
             except IOError:
                 print("An I/O error occurred.")
             my_list = contents.split("\n")[1:]
-            #it was seen that many .txt files contained Measured Depth (MSL) that were not right. It doesn't apply for Norway.
-            string_list = [test.replace("\\t", " ").replace("NaN", "").replace("Measured Depth (MSL)", "None").replace("Measured Depth","MD").replace(",","  ") for test in my_list]
-        elif filepath.lower().endswith('.asc'):
+            # it was seen that many .txt files contained Measured Depth (MSL) that were not right. It doesn't apply for Norway.
+            string_list = [
+                test.replace("\\t", " ")
+                .replace("NaN", "")
+                .replace("Measured Depth (MSL)", "None")
+                .replace("Measured Depth", "MD")
+                .replace(",", "  ")
+                for test in my_list
+            ]
+        elif filepath.lower().endswith(".asc"):
             try:
                 df = pd.read_csv(filepath, header=None)
                 if pd.errors.ParserError:
-                    df = pd.read_csv(filepath, header=None, on_bad_lines="skip").drop_duplicates(ignore_index=True)
+                    df = pd.read_csv(
+                        filepath, header=None, on_bad_lines="skip"
+                    ).drop_duplicates(ignore_index=True)
             except Exception:
-                #Sometimes there are different encodings and the file cannot be read with "utf-8" encoding.
-                df = self.encodings(filepath=filepath).drop_duplicates(ignore_index=True)
+                # Sometimes there are different encodings and the file cannot be read with "utf-8" encoding.
+                df = self.encodings(filepath=filepath).drop_duplicates(
+                    ignore_index=True
+                )
                 if df is None:
                     print(filepath + " - File cannot be red")
             my_list = df.to_string(index=False).split("\n")[1:]
-            string_list = [test.replace("\\t", " ").replace("NaN", "") for test in my_list]
-            
-        elif filepath.lower().endswith('.xlsx'):
-            
+            string_list = [
+                test.replace("\\t", " ").replace("NaN", "") for test in my_list
+            ]
+
+        elif filepath.lower().endswith(".xlsx"):
             df = pd.read_excel(filepath, header=None)
-            my_list = [','.join(str(x) for x in row) for row in df.values]
-            if text_or_number == 'text':
-                string_list = [test.replace(",","  ").replace("nan", ".") for test in my_list]
-            elif text_or_number == 'number':
-                string_list = [test.replace(",","  ").replace("nan", "-999.25") for test in my_list]
-            
+            my_list = [",".join(str(x) for x in row) for row in df.values]
+            if text_or_number == "text":
+                string_list = [
+                    test.replace(",", "  ").replace("nan", ".") for test in my_list
+                ]
+            elif text_or_number == "number":
+                string_list = [
+                    test.replace(",", "  ").replace("nan", "-999.25")
+                    for test in my_list
+                ]
+
         return string_list
 
     # Function to identify text features in the text
 
     def read_text(self, filepath):
-        
         string_list = self.extract_data(filepath=filepath, text_or_number="text")
-        
+
         # It uses regular expression (regex) to check if there are at least two headers. There can be units within these headers
         regex_pattern = r"(?P<GP1>TVD SS|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL|Depth|One Way Time|Two Way Time)\)?(?P<GP1_unit>\s?\(?(m|s|ms)?\)?)?\s+\(?(?P<GP2>TVD SS|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL|Depth|One Way Time|Two Way Time)\)?(?P<GP2_unit>\s?\(?(m|s|ms)\)?)?\s?\(?(?P<GP3>TVD SS|TVDSS|TVD MSL|OWTSRD|TVDMSL|TVDSRD|MD RKB|MDRKB|TVDSD|RKB|OWT|TWT|TVD|MD|MSL|Depth|One Way Time|Two Way Time)?"
         match_string = ""
         match_string_units = ""
         for string in string_list:
             match = re.search(regex_pattern, string, re.IGNORECASE)
-            
+
             if match:
                 match_string = string.replace(")", ") ")
-                
+
                 match_string = match_string.strip()
                 pattern = r"\s{2,}"
                 match_string = re.split(pattern, match_string)
@@ -183,8 +200,7 @@ class FeatureProcessor():
                         pass
             else:
                 pass
-        
-        
+
         # Regex to idenfity if there are lines with units alone
         for string in string_list:
             regex_pattern_units = r"(?<=\s|\]|\)|\[|\()(?P<GP1>[m|s|ms|msec|s|m/s|ft])\s*\]?\)?\s+\(?\[?\s*(?P<GP2>[m|s|ms|msec|s|m/s|ft])\s*\]?\)?\s*\(?\[?\s*(?P<GP3>m|s|ms|msec|s|m/s|ft])?\s*(?=\s|\]|\)|\[|\()"
@@ -192,7 +208,7 @@ class FeatureProcessor():
             if match_units:
                 match_string_units = string.replace(")", ") ").strip()
                 match_string_units = match_string_units.strip()
-                
+
                 pattern_units = r"\s{2,}"
                 match_string_units = re.split(pattern_units, match_string_units)
 
@@ -209,7 +225,7 @@ class FeatureProcessor():
                     pass
             else:
                 pass
-        
+
         # It tries to identify if there are units within parenthesis or brackets together with the header
         if len(match_string_units) == 0:
             match_string_units = []
@@ -222,13 +238,13 @@ class FeatureProcessor():
                         match_string_units.append(match_units_parenthesis)
 
                     else:
-                        match_string_units.append('')
+                        match_string_units.append("")
                         pass
             except Exception:
                 # No unit was found within parenthesis
                 pass
-        
-        if all(item == '' for item in match_string_units):
+
+        if all(item == "" for item in match_string_units):
             try:
                 pattern = r"\[(.*?)\]"
                 for item in match_string:
@@ -244,12 +260,10 @@ class FeatureProcessor():
                 pass
         else:
             pass
-        
+
         # Regex to find acquisition depth elevation
         for string in string_list:
-            regex_depth_elevation = (
-                r"(?:elev|elevation|DF|DEPTH)\s+(of)?\s?(?:depth|MD|REFERENCE|elevation)\s?(datu)?"
-            )
+            regex_depth_elevation = r"(?:elev|elevation|DF|DEPTH)\s+(of)?\s?(?:depth|MD|REFERENCE|elevation)\s?(datu)?"
             match_depth_elevation = re.search(
                 regex_depth_elevation, string, re.IGNORECASE
             )
@@ -324,17 +338,17 @@ class FeatureProcessor():
         try:
             if match_depth_elevation_number is not None:
                 number = float(match_depth_elevation_number)
-                #if depth of reference is zero it means that the reference is not the kelly bushing. Then we set it to None and take the value from SMDA later in the
-                #workflow. If it is higher than 100 it means that it is not kelly bushing either, and we set it to None.
-                #This is why is risky to retrieve data from onshore wells, because the reference of elevation changes and it is generally not well documented.
+                # if depth of reference is zero it means that the reference is not the kelly bushing. Then we set it to None and take the value from SMDA later in the
+                # workflow. If it is higher than 100 it means that it is not kelly bushing either, and we set it to None.
+                # This is why is risky to retrieve data from onshore wells, because the reference of elevation changes and it is generally not well documented.
                 if number == 0 or number > 100:
                     match_depth_elevation_number = None
         except ValueError:
             # Handle invalid string input
-            if match_depth_elevation_number == '0':
+            if match_depth_elevation_number == "0":
                 match_depth_elevation_number = None
 
-        #if there was not a match for depth elevation unit or depth of reference datum, these will be set to None
+        # if there was not a match for depth elevation unit or depth of reference datum, these will be set to None
         if "match_depth_elevation_unit" not in locals():
             match_depth_elevation_unit = None
         else:
@@ -360,7 +374,7 @@ class FeatureProcessor():
         for i in range(0, len(match_string_units)):
             match_string_units[i] = match_string_units[i].lower()
             match_parenthesis = re.findall(r"\(([^)]+)\)", match_string_units[i])
-            #If units are within parenthesis or brackets, it will take them out
+            # If units are within parenthesis or brackets, it will take them out
             if match_parenthesis:
                 match_string_units[i] = match_parenthesis[0]
             else:
@@ -389,8 +403,8 @@ class FeatureProcessor():
 
     def read_data(self, filepath):
         # Tries to extract numeric columns
-        string_list = self.extract_data(filepath=filepath, text_or_number="number")      
-        
+        string_list = self.extract_data(filepath=filepath, text_or_number="number")
+
         regex_pattern_number = r"[0-9.]+\s+[0-9.]+\s*[0-9.]?"
         data = []
         for string in string_list:
@@ -399,13 +413,13 @@ class FeatureProcessor():
                 match_string = string.strip()
                 pattern = r"\s{1,}"
                 match_string = re.split(pattern, match_string)
-                
-                #match_string = [try float(x) else x for x in match_string]
+
+                # match_string = [try float(x) else x for x in match_string]
                 match_string = [float(x) if x.isnumeric() else x for x in match_string]
                 data.append(match_string)
             else:
                 pass
-        
+
         return data
 
     def verification(self, data, regex):
@@ -426,30 +440,32 @@ class FeatureProcessor():
                 dictionary[regex[i]] = x[:, i].tolist()
 
         return dictionary
+
     def specific_assignment(self, data, regex):
         pass
-    #def input(self, feature):  # Main starting point
+
+    # def input(self, feature):  # Main starting point
     def input(self, filepath):  # Main starting point
-        #filepath = feature.getAttribute("file_path")
+        # filepath = feature.getAttribute("file_path")
         filepath = filepath
-        #filepath = filepath
+        # filepath = filepath
         try:
             qc_description = list()
             # Import headers and numeric columns
 
             dict_match = self.read_text(filepath=filepath)
-            
+
             regex_units = dict_match["match_units"]
             regex_units = str(regex_units)
-            #feature.setAttribute("regex_units", regex_units)
+            # feature.setAttribute("regex_units", regex_units)
             regex_depth_elevation_number = dict_match["depth_elevation_number"]
-            #feature.setAttribute(
+            # feature.setAttribute(
             #    "depth_reference_elevation", regex_depth_elevation_number
-            #)
+            # )
             regex_depth_elevation_unit = dict_match["depth_elevation_unit"]
-            #feature.setAttribute(
+            # feature.setAttribute(
             #    "depth_reference_elevation_unit", regex_depth_elevation_unit
-            #)
+            # )
 
             regex_depth_reference_datum_text = dict_match["depth_reference_datum_text"]
             data = self.read_data(filepath=filepath)
@@ -457,7 +473,7 @@ class FeatureProcessor():
             dict_verified = self.verification(
                 regex=dict_match["match_header"], data=data
             )
-            
+
             renamer = Rename_functions()
             # It will rename all the headers
             for key, value in dict_verified.items():
@@ -485,8 +501,8 @@ class FeatureProcessor():
 
             else:
                 depth_reference_datum = None
-            
-            #feature.setAttribute("depth_reference_datum", depth_reference_datum)
+
+            # feature.setAttribute("depth_reference_datum", depth_reference_datum)
             # It will rename all depth_reference points
             for key, value in dict_verified.items():
                 depth_reference_point = renamer.depth_reference_point(key)
@@ -495,7 +511,7 @@ class FeatureProcessor():
 
             if "depth_reference_point" not in locals():
                 depth_reference_point = None
-            #feature.setAttribute("depth_reference_point", depth_reference_point)
+            # feature.setAttribute("depth_reference_point", depth_reference_point)
             # It will rename all the headers
             for key, value in dict_verified.items():
                 key_renamed = renamer.rename_key(key)
@@ -518,7 +534,7 @@ class FeatureProcessor():
             except Exception:
                 print(f"{filepath} - Headers were not renamed")
                 pass
-            #Now that the header and data is already matched, it will be tried to match the units
+            # Now that the header and data is already matched, it will be tried to match the units
             if len(dict_match["match_units"]) > 0:
                 units = self.confirm_units(dict_match)
             else:
@@ -527,7 +543,9 @@ class FeatureProcessor():
 
             dict_header = {}
             dict_units = {}
-            for (measure) in (header):  # It will associate every header to a specific measure in order.
+            for measure in (
+                header
+            ):  # It will associate every header to a specific measure in order.
                 if measure == "MD":
                     dict_header[measure] = dict_verified[measure]
                     dict_units[measure] = units.get(measure, None)
@@ -545,7 +563,9 @@ class FeatureProcessor():
                     dict_units[measure] = units.get(measure, None)
 
                 elif measure == "OWT":
-                    dict_header["TWT"] = [float(num) * 2 for num in dict_verified[measure]]
+                    dict_header["TWT"] = [
+                        float(num) * 2 for num in dict_verified[measure]
+                    ]
                     qc_description.append(
                         "{} renamed to {}, and values were multiplied by 2.".format(
                             measure, "TWT"
@@ -553,7 +573,6 @@ class FeatureProcessor():
                     )
                     dict_units["TWT"] = units.get(measure, None)
 
-            
             if len(dict_header.keys()) >= 2:
                 # Data output only happens if there are more than two numeric columns with a header
                 headers = dict_header.keys()
@@ -567,13 +586,13 @@ class FeatureProcessor():
                         .replace("'", "")
                         .replace("]", "")
                     )
-                    #feature.setAttribute(head, column)
+                    # feature.setAttribute(head, column)
                     try:
                         unit_column = head + "_unit"
                         unit = dict_units.get(head, None)
                         if unit is None:
                             unit = "None"
-                        #feature.setAttribute(unit_column, unit)
+                        # feature.setAttribute(unit_column, unit)
                     except Exception:
                         print(f"{filepath} - No unit was found for {head}")
                         pass
@@ -586,30 +605,32 @@ class FeatureProcessor():
                         .replace("'", "")
                         .replace("]", "")
                     )
-                    #feature.setAttribute(nul, nul_number)
+                    # feature.setAttribute(nul, nul_number)
                 regex = str(dict_match["match_header"])
-                #feature.setAttribute("regex", regex)
+                # feature.setAttribute("regex", regex)
             else:
                 pass
             # outputs the description of the qc
             qc_description = (
                 str(qc_description).replace("[", "").replace("'", "").replace("]", "")
             )
-            #feature.setAttribute("qc_description", qc_description)
+            # feature.setAttribute("qc_description", qc_description)
         except Exception as e:
             print(f"{filepath} cannot be read. Reason: {e}")
             pass
-        #self.pyoutput(feature)
+        # self.pyoutput(feature)
 
     def close(self):
         """This method is called once all the FME Features have been processed
         from input().
         """
         pass
+
+
 from IPython import embed
-filepath = 'G:\\Sub_Appl_Data\\WellDB\\GB\\wells\\0014\\GB 14-24a- 3\\07.Borehole_Seismic\\14_24a-_3_well_digital_seismic_CSHOT_FILE_236269151.xlsx'
-filepath2 = 'G:\\Sub_Appl_Data\\WellDB\\GB\\wells\\0014\\GB 14-30a- 4\\07.Borehole_Seismic\\25645af_CGG-Checkshot.xlsx'
-filepath3 = 'G:\\Sub_Appl_Data\\WellDB\\NO\\wells\\0001\\NO 1-3-10\\07.Borehole_Seismic\\TZV_DEPTH_MD_CHECKSHOT_2008-01-07_1.ASC'
+
+filepath = "G:\\Sub_Appl_Data\\WellDB\\GB\\wells\\0014\\GB 14-24a- 3\\07.Borehole_Seismic\\14_24a-_3_well_digital_seismic_CSHOT_FILE_236269151.xlsx"
+filepath2 = "G:\\Sub_Appl_Data\\WellDB\\GB\\wells\\0014\\GB 14-30a- 4\\07.Borehole_Seismic\\25645af_CGG-Checkshot.xlsx"
+filepath3 = "G:\\Sub_Appl_Data\\WellDB\\NO\\wells\\0001\\NO 1-3-10\\07.Borehole_Seismic\\TZV_DEPTH_MD_CHECKSHOT_2008-01-07_1.ASC"
 feature_processor = FeatureProcessor()
 feature_processor.input(filepath2)
-

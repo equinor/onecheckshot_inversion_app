@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
-    page_title='OneCheckshot',
-    page_icon=':earth_americas:',
-    layout="wide" # This is an emoji shortcode. Could be a URL too.
+    page_title="OneCheckshot",
+    page_icon=":earth_americas:",
+    layout="wide",  # This is an emoji shortcode. Could be a URL too.
 )
 
 # -----------------------------------------------------------------------------
@@ -29,16 +29,16 @@ st.write(""" #### Checkshot data is used to calibrate sonic log data, which is e
 
 col1, col2 = st.columns(2)
 with col1:
-    st.write("## Bayesian Dix Inversion method") 
+    st.write("## Bayesian Dix Inversion method")
     st.write(""" #### Bayesian inversion can be a method to apply sonic log calibration on the sonic log using checkshot data. It provides a framework for combining an attributed prior knowledge (e.g., interval velocity and uncertainty from sonic log) with new data (the checkshot measurements) to estimate a more accurate posterior velocity trend. This allows for a quantitative assessment of the uncertainty associated with the adjusted time-depth relationship curve.
 
 #### In this case, both the the sonic log and checkshot data can be modeled as uncertain data, but the uncertainty on sonic log is higher. Sonic logs are typically more susceptible to noise and interference compared to checkshot data, which is often considered more reliable for depth calibration. By doing so, the sonic log curve can be shifted towards the checkshot data points, and an uncertainty can be estimated using bayesian inversion.             
 """)
-    
+
     st.write("""
 ## Methodology
 #### The workflow for generating the updated time-depth relationship is illustrated on Figure x (Source?). The first step is to extend to seabed, which can be detailed using velocity trends estimated from other log data (density log for example) and using general theoretical trends. Once the velocity trend is created, Bayes' theorem can be applied to correct it using sonic log. The output is a continuous high-resolution velocity log and time-depth curve from z=0.""")
-    st.image('images/methodology.jpg')         
+    st.image("images/methodology.jpg")
     st.write("""#### The Bayes' Theorem can be described in the application of this workflow with equation x (Dischler et al. 2013). It involves formulating a prior probability distribution for the model, p(m), which is here interval velocity from sonic log, and then regard the measured checkshot points as a set of data, d. A likelihood function, p(d|m), that represents the conditional probability of measuring a given set of data d given the model m is defined by assuming a measurement error, e. By Bayes’rule the inversion solution is obtained as a posterior probability function
 
 ## p(m|d) ∝ p(d|m)p(m).
@@ -52,7 +52,6 @@ with col1:
 
 
 with col2:
-
     st.write("""
 ## Advantages
              
@@ -73,7 +72,7 @@ interpretation. Finally, Bayesian inference can handle large datasets and comple
 
       
 """)
-    st.image('images/impact.jpg')
+    st.image("images/impact.jpg")
 
 
 st.write(""" ## References\

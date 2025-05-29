@@ -7,21 +7,20 @@ import yaml
 
 # Connect the path with your '.env' file name
 
-config_file = os.path.join(os.getcwd(),"smda_password","smda_api.yaml")
+config_file = os.path.join(os.getcwd(), "smda_password", "smda_api.yaml")
 with open(config_file, "r") as file:
     config = yaml.safe_load(file)
-    TENANT = config['TENANT']
-    CLIENT_ID = config['CLIENT_ID']
-    SCOPE = config['SCOPE']
-    CLIENT_SECRET = config['CLIENT_SECRET']
-    Subscription_Key = config['Subscription_Key']
+    TENANT = config["TENANT"]
+    CLIENT_ID = config["CLIENT_ID"]
+    SCOPE = config["SCOPE"]
+    CLIENT_SECRET = config["CLIENT_SECRET"]
+    Subscription_Key = config["Subscription_Key"]
 
 
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT}"
 
 
 class SmdaApiClient:
-
     def __init__(self) -> None:
         self._token_cache = None
         self._token_expiry = 0
@@ -71,6 +70,8 @@ class SmdaApiClient:
             if response.text:
                 msg += f" Message: {response.text}."
             return None, msg
+
+
 def get_wellbore_trajectory(uwi):
     encoded_uwi = urllib.parse.quote(uwi, safe="")
     API_ENDPOINT = f"https://api.gateway.equinor.com/smda/v2.0/smda-api/wellbore-survey-samples?_projection=unique_wellbore_identifier,%20md,%20tvd_msl&unique_wellbore_identifier={encoded_uwi}"

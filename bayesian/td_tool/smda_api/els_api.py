@@ -7,14 +7,14 @@ import yaml
 
 # Connect the path with your '.env' file name
 
-config_file = os.path.join(os.getcwd(),"smda_password","els_api.yaml")
+config_file = os.path.join(os.getcwd(), "smda_password", "els_api.yaml")
 with open(config_file, "r") as file:
     config = yaml.safe_load(file)
-    TENANT = config['TENANT']
-    CLIENT_ID = config['CLIENT_ID']
-    SCOPE = config['SCOPE']
-    CLIENT_SECRET = config['CLIENT_SECRET']
-    Subscription_Key = config['Subscription_Key']
+    TENANT = config["TENANT"]
+    CLIENT_ID = config["CLIENT_ID"]
+    SCOPE = config["SCOPE"]
+    CLIENT_SECRET = config["CLIENT_SECRET"]
+    Subscription_Key = config["Subscription_Key"]
 
 
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT}"
@@ -75,9 +75,9 @@ class ElsApiClient:
 def get_api(uwi, selected_source_well_log):
     encoded_uwi = urllib.parse.quote(uwi)
 
-    if selected_source_well_log == 'LFP':
+    if selected_source_well_log == "LFP":
         API_ENDPOINT = f"https://api.gateway.equinor.com/els/curves/data?source=LFP&unique_wellbore_identifier={encoded_uwi}&curve_identifier=MD,%20TVDMSL,%20LFP_VP_V,%20LFP_VP_LOG,%20LFP_VP_G,%20LFP_VP_O,%20LFP_VP_B"
-    elif selected_source_well_log == 'FMB':
+    elif selected_source_well_log == "FMB":
         API_ENDPOINT = f"https://api.gateway.equinor.com/els/curves/data?source=FMB&unique_wellbore_identifier={encoded_uwi}&curve_identifier=MD,%20TVDMSL,%20DT"
     c = ElsApiClient()
     response, msg = c.get_wellbore_plan(API_ENDPOINT)
