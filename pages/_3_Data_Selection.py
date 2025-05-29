@@ -26,6 +26,7 @@ from bayesian.td_tool.ELS_log_API import (
     load_els_data,
     load_els_data_fmb,
 )
+from bayesian.td_tool.functions import return_style_table
 from bayesian.td_tool.smda_api.els_api import get_api
 
 st.set_page_config(layout="wide")
@@ -56,25 +57,15 @@ columns = 'md, md_unit, tvd, tvd_ss, tvd_unit, depth_reference_elevation, depth_
 df = generate_df(host, dbname, user, password, sslmode, columns, database_checkshot, uwi)
 df_dsa = generate_df(host, dbname, user, password, sslmode, '*', database_dsa, uwi)
 connect.close_connection()
-#df.loc[df['depth_source'].str.contains('sealevel', case=False), 'interval_velocity'] = 1479
-#df.loc[df['depth_source'].str.contains('sealevel', case=False), 'average_velocity'] = 1479
-#df.loc[df['depth_source'].str.contains('seabed', case=False), 'interval_velocity'] = 1479
-#df.loc[df['depth_source'].str.contains('seabed', case=False), 'average_velocity'] = 1479
-
-# df.loc[df['depth_source'].str.contains('sealevel', case=False), 'interval_velocity'] = 1479
-# df.loc[df['depth_source'].str.contains('sealevel', case=False), 'average_velocity'] = 1479
-# df.loc[df['depth_source'].str.contains('seabed', case=False), 'interval_velocity'] = 1479
-# df.loc[df['depth_source'].str.contains('seabed', case=False), 'average_velocity'] = 1479
 seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
 
 
-#seabed = df.loc[df['depth_source'].str.contains('seabed', case=False), 'tvd_ss'].astype(float)
-#st.write(type(seabed))
 col1, col2 = st.columns(2)
 with col1:
     selected_source = st.selectbox(f"Select Checkshot File", options=df['source_file'].unique())
 
-    df = df[(df['source_file'] == selected_source) & (df['md_increasing'] == 'true')]
+    df = df[(df['source_file'] == selected_source) & (df['md_increasing'] == 'true') & (df['time_increasing'] == 'true')]
+    st.write("Obs: Data points with decreasing MD or Time will be removed from the dataset.")
     df.sort_values(by=['md'], ascending=[True], inplace=True)
 
 
@@ -155,44 +146,7 @@ with col1:
 with col2:
     st.write(df_sonic)
 
-
-    #df_sonic = load_els_log(uwi, selected_curve_welllog, connection_els)
-    #if st.session_state.connection_ELS == True:
-    #selected_source_welllog = st.selectbox(f"Select Sonic Log File", options=df_filtered['source'].unique())
-        #st.write(df_sonic)    
-
-
-# df_sonic = load_els_log(uwi, selected_curve_welllog, connection_els)
-
 td = df[['md','tvd','tvd_ss', 'depth_reference_elevation', 'time', 'qc_description', 'average_velocity', 'interval_velocity', 'md_increasing', 'tvd_ss_increasing', 'time_increasing', 'average_velocity_qc', 'trajectory_checked', 'depth_source']]
-
-
-def color_cells(val):
-  """
-  Styles the cell background color based on the value.
-
-  Args:
-    val: The value in the cell.
-
-  Returns:
-    The CSS style for the cell background.
-  """
-  if val == 0:
-    color = 'green'
-  else:
-    color = 'red'
-  return f'background-color: {color}'
-
-def display_table(df):
-  """
-  Displays the DataFrame with colored cells using Streamlit.
-
-  Args:
-    df: The pandas DataFrame to display.
-  """
-  styled_df = df.style.applymap(color_cells)
-  st.dataframe(styled_df, width=None)
-
 
 
 col1, col2 = st.columns(2)
@@ -243,9 +197,10 @@ with col1:
         st.plotly_chart(fig1_2)
     
 st.write("## Onecheckshot DSA QC")
-columns_dsa = ['md_data_missing', 'tvd_ss_data_missing', 'twt_data_missing', 'twt_higher_than_max', 'not_enough_stations', 'file_unavailable_welldb', 'file_unavailable_smda', 'depth_discrepancy_below_cutoff', 'incorrect_datum', 'station_density_below_cutoff', 'uniqueness_below_cutoff', 'tvd_ss_not_increasing', 'twt_not_increasing', 'high_average_velocities', 'low_average_velocities']
-df_dsa = df_dsa[columns_dsa]
-st.dataframe(display_table(df_dsa))
+columns_dsa = ['unique_wellbore_identifier','source_file','md_data_missing', 'tvd_ss_data_missing', 'twt_data_missing', 'twt_higher_than_max', 'not_enough_stations', 'incorrect_datum', 'station_density_below_cutoff', 'uniqueness_below_cutoff', 'tvd_ss_not_increasing', 'twt_not_increasing', 'high_average_velocities', 'low_average_velocities', 'mean_time_drift', 'sonic_log_source', 'description', 'insert_date']
+styled_df = return_style_table(df_dsa[columns_dsa])
+st.dataframe(styled_df, width=None)
+#st.dataframe(display_table(df_dsa[columns_dsa]))
 
 
 with col2:
@@ -344,6 +299,10 @@ with col3:
     with container1:
         # Create your plot here
         st.write('## Time Domain')
+        if df_dsa['evaluated_against_sonic'].iloc[0]:
+            st.write(f"Time drift between Checkshot and Sonic log ({df_dsa['sonic_log_source'].iloc[0]}): {df_dsa['mean_time_drift'].iloc[0]} ms")
+        else:
+            pass
         fig1 = go.Figure()
         fig1.add_trace(go.Scatter(y=td["tvd_ss"],x=td["time"],mode="markers",marker=dict(color='red',size=10),name='Checkshot data'))
         try:
@@ -358,7 +317,7 @@ with col3:
             t = np.cumsum(dt)+first_time_sonic
             fig1.add_trace(go.Line(x=t,y=df_sonic['tvd_ss'].astype(float),name=f"Sonic Log {selected_log_curve}", marker_color='blue'))
         except:
-            st.write('No Sonic log available for this well')
+            st.write("No Sonic log available for this well on ELS API.")
 
         fig1.update_layout(
         title=f'#Time Domain',
