@@ -26,7 +26,7 @@ from bayesian.td_tool.ELS_log_API import (
     load_els_data,
     load_els_data_fmb,
 )
-from bayesian.td_tool.functions import return_style_table
+from bayesian.td_tool.functions import return_style_table, decimate_dataframe
 from bayesian.td_tool.smda_api.els_api import get_api
 
 st.set_page_config(layout="wide")
@@ -118,28 +118,6 @@ with col2:
             api_connection = 'no'        
 
 
-
-
-    #elif selected_source_well_log == 'FMB':
-    #    try:
-    #        #df_sonic = pd.DataFrame()
-    #        @st.cache_data
-    #        def load_els_log(uwi):
-    #            connection_els = Connection_ELS_LOG()
-    #            df = connection_els.kusto_query_FMB(KUSTO_CLIENT_TEST, uwi)
-    #            st.session_state.connection_ELS = True
-    #            return df
-    #        df_sonic_els = load_els_log(uwi)
-    #        pass
-    #    except Exception as e:
-    #        st.write(f'Problem with connection to ELS API. Error: {e}')
-    #    
-    #    options_log = ['DT']
-    #    selected_log_curve = st.selectbox(f"Select Sonic Log Curve", options=options_log)
-    #    df_sonic = load_els_data_fmb(df_sonic_els, selected_log_curve)
-    #    df_sonic = df_sonic.sort_values(by=['md'])
-
-
 col1, col2 = st.columns(2)
 with col1:
     st.write(df[['md', 'tvd', 'tvd_ss', 'tvd_unit', 'md_unit','depth_source','depth_reference_elevation', 'time', 'time_unit', 'average_velocity', 'average_velocity_qc', 'interval_velocity','qc_description']])
@@ -153,7 +131,6 @@ col1, col2 = st.columns(2)
 with col1:
     col1_1, col1_2 = st.columns(2)
     with col1_1:
-        #st.write("Plot Checkshot data. It was performed a quality control for this data following https://github.com/equinor/qc_and_clean_cks.")
         fig1_1 = go.Figure()
         fig1_1.add_trace(go.Scatter(y=td["tvd_ss"],x=td["time"],mode="markers",marker=dict(color='red',size=10),name='Checkshot data'))
 
@@ -222,28 +199,6 @@ with col2:
 
     df_checkshot_plot2 = td.copy(deep=True)
 
-# continue from here
-# time_sonic = getTime(df_sonic['tvd_ss'], df_sonic['interval_velocity_sonic'])
-
-# st.write([type(x) for x in np.array(df_sonic['tvd_ss']).astype(float)])
-# st.write([type(x) for x in df_sonic['interval_velocity_sonic']])
-
-def decimate_dataframe(df, decimate_step):
-    """Decimates a DataFrame by selecting every `decimate_step`-th row.
-
-    Args:
-        df: The input DataFrame.
-        decimate_step: The decimation step size.
-
-    Returns:
-        The decimated DataFrame.
-    """
-
-    ibayes = np.arange(decimate_step - 1, len(df), decimate_step)
-    ibayes[-1] = len(df) - 1  # Ensure the last row is included
-
-    df_decimated = df.iloc[ibayes]
-    return df_decimated
 
 col1, col2 = st.columns(2)
 with col1:
@@ -292,7 +247,6 @@ with col2:
     except:
         pass
 
-# embed()
 col3, col4 = st.columns(2)
 with col3:
     container1 = st.container()
@@ -328,10 +282,6 @@ with col3:
         height=1800,
         yaxis_range=[max(df_checkshot_plot2["tvd_ss"]), min(df_checkshot_plot2["tvd_ss"])])
         
-        
-
-            
-        #st.plotly_chart(fig1)
 
 df_sonic_plot2 = df_sonic.copy(deep=True)
 
@@ -414,7 +364,7 @@ if st.button("Save Checkshot and Sonic data:"):
         else:
             st.session_state['Checkshot'] = td
         st.session_state['seabed'] = seabed
-        st.write(f"Checkshot file for well {uwi} saved")
+        st.write(f"Checkshot file saved for well {uwi} saved")
     except:
         st.write(f'No Checkshot file for well {uwi}')
     try:
