@@ -97,7 +97,36 @@ def redatum(well_z, well_vp, td_z, td_t, zstart=0):
 
 
 class Run_Bayesian:
+    def __init__(self):
+        pass
+    """
+    Performs a Bayesian inversion to update well velocity (Vp) based on
+    time-depth (TD) control points, incorporating prior model uncertainties
+    and data uncertainties.
+
+    This class handles the entire workflow:
+    1. Redatuming input well logs and TD points to a specified start depth.
+    2. Deriving initial time curves from well velocity.
+    3. Decimating data to speed up the Bayesian inversion.
+    4. Constructing prior model (slowness) expectation and covariance,
+       including options for constant or percentage-based velocity standard
+       deviation and spatial correlation.
+    5. Defining data (check-shot times) and its uncertainty.
+    6. Executing the Bayesian inversion to obtain a posterior slowness model.
+    7. Resampling the posterior velocity and its standard deviation back to
+       the original depth sampling.
+    8. Applying optional smoothing to the velocity update.
+    9. Redatuming results back to the initial depth.
+
+    The primary method, `runCsc`, facilitates this process.
+
+    Attributes:
+        No direct attributes initialized in __init__ based on the provided code.
+        All operational parameters are passed via the `par` dictionary
+        to the `runCsc` method.
+    """    
     def runCsc(self, well_z_in, well_vp_in, td_z_in, td_t_in, par):
+
         from bayesian.td_tool.td_lib import getVel, getDrift
         from bayesian.td_tool.bayes_csc import getTime
 
@@ -195,11 +224,6 @@ class Run_Bayesian:
         # get solution
         mu_post, Sigma_post = PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
 
-        # start_time_2 = time.time()
-        # mu_post_cpp,Sigma_post_cpp = pg.PostGauss(G, d, Sigma_e, mu_m, Sigma_m)
-        # end_time_2 = time.time()
-        # print("Execution time CPP:", end_time_2 - start_time_2, "seconds")
-
         # derive posterior data
         well_vp_dec_post = 1 / mu_post
         sigma_post_d = np.diag(Sigma_post)
@@ -264,7 +288,7 @@ class Run_Bayesian:
         std_total_depth = std_function(well_z_out)
         print(std_total_depth)
 
-        return well_vp_out, well_z_out, C, std_total_depth  # ,well_t_out
+        return well_vp_out, well_z_out, C, std_total_depth
 
     # %%%%%%%%%%%%%%%%%%%%%
     # %- Resample output -%

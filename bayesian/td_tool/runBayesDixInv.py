@@ -28,6 +28,15 @@ import time
 
 
 class Bayesian_Inference:
+    """
+    A class designed to perform Bayesian time-depth correction on well sonic logs
+    using check-shot survey data.
+
+    This class encapsulates the entire workflow, from data validation and preparation
+    (like extending logs to surface) to executing the Bayesian inversion and returning
+    the corrected velocity model. It leverages external functions for specific
+    geophysical computations (e.g., `extendLogsToZero`, `Run_Bayesian.runCsc`).
+    """
     def __init__(self):
         pass
 
@@ -49,6 +58,58 @@ class Bayesian_Inference:
         decimation_step,
         uwi,
     ):
+        """
+        Executes the full Bayesian time-depth correction workflow for a given well.
+
+        This method integrates various steps: data preparation, log extension,
+        parameter setup for the Bayesian model, and the actual Bayesian inversion
+        using an external `Run_Bayesian` class. It also includes error handling
+        for the inversion step.
+
+        Args:
+            df_checkshot (pd.DataFrame): Input DataFrame with check-shot data. Expected columns
+                                         include 'tvd_ss', 'time', 'average_velocity',
+                                         'interval_velocity', and 'depth_source'.
+            df_sonic (pd.DataFrame): Input DataFrame with sonic log data. Expected columns
+                                     include 'md', 'tvd_ss', and 'interval_velocity_sonic'.
+            std_sonic (float): The constant standard deviation to apply to the sonic velocity
+                                for the prior model uncertainty.
+            std_checkshot (float): The constant standard deviation to apply to the check-shot
+                                   times for data uncertainty.
+            apply_covariance (str): A string indicating whether to apply spatial covariance
+                                    in the Bayesian prior. Expected values are "Apply" or
+                                    "Do not apply".
+            corr_order (int): The order of the correlation function to use if
+                              `apply_covariance` is "Apply".
+            inversion_start_depth (float): The true vertical depth (TVD) from which
+                                           the Bayesian inversion should commence.
+            decimation_step (int): The factor by which to decimate the well log data
+                                   to speed up the Bayesian computation.
+            uwi (str): The Unique Well Identifier for the well being processed. Used
+                       for logging and output identification.
+
+        Returns:
+            tuple: A tuple containing the processed well data and related results:
+                - df_well (pd.DataFrame): A DataFrame including 'md', 'TVDMSL', 'VP_IN'
+                                          (original Vp), 'VP_EXT' (if extended), and
+                                          'VP_BAYES' (Bayesian-corrected Vp).
+                - td_z (np.ndarray): Array of depths from the check-shot data.
+                - td_t (np.ndarray): Array of times (in seconds) from the check-shot data.
+                - ww (str): The cleaned UWI string used internally.
+                - water_depth (float): The TVD of the seabed, extracted from check-shot data.
+                - water_velocity (float): The constant water velocity assumed for log extension.
+                - C (np.ndarray or None): The spatial correlation matrix used in the Bayesian prior.
+                                          Returns `None` if the Bayesian step fails.
+                - std_total_depth (np.ndarray or None): The estimated standard deviation of the
+                                                      posterior velocity profile at well depths.
+                                                      Returns `None` if the Bayesian step fails.
+
+        Raises:
+            ValueError: Propagates from `assert_data` if input DataFrames are invalid.
+            Exception: Catches and prints general exceptions that occur during the
+                       Bayesian inference process, reporting an error but allowing
+                       the function to return partial results.
+        """
         ww = uwi
         ww = ww.replace(" ", "_").replace("/", "_")
         #####################
