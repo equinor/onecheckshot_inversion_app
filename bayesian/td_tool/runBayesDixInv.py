@@ -81,7 +81,7 @@ class Bayesian_Inference:
                                     "Do not apply".
             corr_order (int): The order of the correlation function to use if
                               `apply_covariance` is "Apply".
-            inversion_start_depth (float): The true vertical depth (TVD) from which
+            inversion_start_depth (float): The true vertical depth subsea (TVDMSL) from which
                                            the Bayesian inversion should commence.
             decimation_step (int): The factor by which to decimate the well log data
                                    to speed up the Bayesian computation.
