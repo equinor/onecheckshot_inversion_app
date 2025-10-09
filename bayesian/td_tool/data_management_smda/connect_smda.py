@@ -5,6 +5,7 @@ import psycopg2
 import os
 import numpy as np
 from IPython import embed
+from bayesian.td_tool.functions import get_config
 
 
 class Connection_Database:
@@ -39,14 +40,16 @@ class Connection_Database:
 
 
 def get_connect_database():
-    config_file = os.path.join(os.getcwd(), "smda_password", "config.yaml")
-    with open(config_file, "r") as file:
+    config = os.path.join(os.getcwd(), "config.yaml")
+    with open(config, "r") as file:
         config = yaml.safe_load(file)
-    host = config["host"]
-    dbname = config["dbname"]
-    user = config["user"]
-    password = config["password"]
-    sslmode = config["sslmode"]
+
+    host = get_config(config, "host")
+    dbname = get_config(config, "dbname")
+    user = get_config(config, "user")
+    password = get_config(config, "password")
+    sslmode = get_config(config, "sslmode")
+
     return host, dbname, user, password, sslmode
 
 

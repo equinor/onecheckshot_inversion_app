@@ -16,11 +16,11 @@ def log_in():
     os.environ["REQUESTS_CA_BUNDLE"] = "ca-bundle.crt"
     AAD_TENANT_ID = "3aa4a235-b6e2-48d5-9195-7fcf05b459b0"
 
-    CLIENT_ID = "a721bf21-d9a7-4f6a-9a42-a6c65dec77c3"
+    CLIENT-ID = "a721bf21-d9a7-4f6a-9a42-a6c65dec77c3"
     KUSTO_CLUSTER = "https://dec-sdf-dh-prod-ne.northeurope.kusto.windows.net"
     KUSTO_DATABASE = "ELS"
     KCSB = KustoConnectionStringBuilder.with_interactive_login(KUSTO_CLUSTER)
-    # KCSB = KustoConnectionStringBuilder.with_aad_managed_service_identity_authentication(KUSTO_CLUSTER, client_id=AAD_TENANT_ID)
+    # KCSB = KustoConnectionStringBuilder.with_aad_managed_service_identity_authentication(KUSTO_CLUSTER, CLIENT-ID=AAD_TENANT_ID)
     # KCSB = KustoConnectionStringBuilder.with_az_cli_authentication(KUSTO_CLUSTER)
     # KCSB.authority_id = AAD_TENANT_ID
     KUSTO_CLIENT = KustoClient(KCSB)

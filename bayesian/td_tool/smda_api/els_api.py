@@ -4,17 +4,17 @@ import time
 import urllib.parse
 import os
 import yaml
+from bayesian.td_tool.functions import get_config 
 
-# Connect the path with your '.env' file name
-
-config_file = os.path.join(os.getcwd(), "smda_password", "els_api.yaml")
+config_file = os.path.join(os.getcwd(), "config.yaml")
 with open(config_file, "r") as file:
     config = yaml.safe_load(file)
-    TENANT = config["TENANT"]
-    CLIENT_ID = config["CLIENT_ID"]
-    SCOPE = config["SCOPE"]
-    CLIENT_SECRET = config["CLIENT_SECRET"]
-    Subscription_Key = config["Subscription_Key"]
+ 
+TENANT = get_config(config, "TENANT")
+CLIENT-ID = get_config(config, "CLIENT-ID")
+SCOPE = get_config(config, "SCOPE-ELS")
+CLIENT_SECRET = get_config(config, "CLIENT-SECRET-ELS")
+Subscription_Key = get_config(config, "Subscription-Key-ELS")
 
 
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT}"
@@ -23,7 +23,7 @@ AUTHORITY = f"https://login.microsoftonline.com/{TENANT}"
 class ElsApiClient:
     def __init__(self) -> None:
         self._app = ConfidentialClientApplication(
-            CLIENT_ID, CLIENT_SECRET, authority=AUTHORITY
+            CLIENT-ID, CLIENT_SECRET, authority=AUTHORITY
         )
         self._token_cache = self._app.get_accounts()
         self._token_expiry = 0

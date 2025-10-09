@@ -11,7 +11,7 @@ A SMDA application that generates velocity trends using sonic log and checkshot 
    ```
    $ pip install -r requirements.txt
    ```
-2. Add a folder called smda_password on the main .\onecheckshot_inversion_app page with a config.yaml, els_api.yaml, and smda_api.yaml file containing user and password for smda and els api's.
+2. Add a file called config.yaml on the main .\onecheckshot_inversion_app page.
 
 2. Go to .\onecheckshot_inversion_app in powershell and run:
 

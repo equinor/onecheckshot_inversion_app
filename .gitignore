@@ -163,6 +163,6 @@ cython_debug/
 #.idea/
 #security
 /data/checkshot_sonic_table.csv
-smda_password/
+config.yaml
 las_export/
 bayesian/td_tool/smda_api/prod.env
