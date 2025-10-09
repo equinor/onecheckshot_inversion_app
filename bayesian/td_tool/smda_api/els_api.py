@@ -11,9 +11,9 @@ with open(config_file, "r") as file:
     config = yaml.safe_load(file)
  
 TENANT = get_config(config, "TENANT")
-CLIENT-ID = get_config(config, "CLIENT-ID")
+CLIENT_ID = get_config(config, "CLIENT-ID")
 SCOPE = get_config(config, "SCOPE-ELS")
-CLIENT_SECRET = get_config(config, "CLIENT-SECRET-ELS")
+CLIENT_SECRET_ELS = get_config(config, "CLIENT-SECRET-ELS")
 Subscription_Key = get_config(config, "Subscription-Key-ELS")
 
 
@@ -23,7 +23,7 @@ AUTHORITY = f"https://login.microsoftonline.com/{TENANT}"
 class ElsApiClient:
     def __init__(self) -> None:
         self._app = ConfidentialClientApplication(
-            CLIENT-ID, CLIENT_SECRET, authority=AUTHORITY
+            CLIENT_ID, CLIENT_SECRET_ELS, authority=AUTHORITY
         )
         self._token_cache = self._app.get_accounts()
         self._token_expiry = 0

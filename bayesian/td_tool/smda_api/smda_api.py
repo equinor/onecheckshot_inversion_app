@@ -11,9 +11,9 @@ with open(config_file, "r") as file:
     config = yaml.safe_load(file)
 
 TENANT = get_config(config, "TENANT")
-CLIENT-ID = get_config(config, "CLIENT-ID")
+CLIENT_ID = get_config(config, "CLIENT-ID")
 SCOPE = get_config(config, "SCOPE-SMDA")
-CLIENT_SECRET = get_config(config, "CLIENT-SECRET-SMDA")
+CLIENT_SECRET_SMDA = get_config(config, "CLIENT-SECRET-SMDA")
 Subscription_Key = get_config(config, "Subscription-Key-SMDA")
 
 
@@ -25,7 +25,7 @@ class SmdaApiClient:
         self._token_cache = None
         self._token_expiry = 0
         self._app = ConfidentialClientApplication(
-            CLIENT-ID, CLIENT_SECRET, authority=AUTHORITY
+            CLIENT_ID, CLIENT_SECRET_SMDA, authority=AUTHORITY
         )
 
     def _get_token(self):
