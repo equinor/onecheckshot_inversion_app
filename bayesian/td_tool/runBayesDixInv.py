@@ -57,6 +57,7 @@ class Bayesian_Inference:
         inversion_start_depth,
         decimation_step,
         uwi,
+        seabed,
     ):
         """
         Executes the full Bayesian time-depth correction workflow for a given well.
@@ -134,10 +135,6 @@ class Bayesian_Inference:
         td = df_checkshot[
             ["tvd_ss", "time", "average_velocity", "interval_velocity", "depth_source"]
         ].dropna(subset="time")
-        first_row_seabed = df_checkshot[
-            df_checkshot["depth_source"].str.contains("seabed")
-        ].iloc[0]
-
         df_sonic = df_sonic[["md", "tvd_ss", "vp"]].dropna(subset="vp")
 
         print("----")
@@ -152,11 +149,7 @@ class Bayesian_Inference:
 
         df_well = pd.DataFrame({"md": well_z_md, "TVDMSL": well_z, "VP_IN": well_vp})
 
-        water_depth = first_row_seabed["tvd_ss"]
-
-        water_depth = float(water_depth)
-        water_twt = first_row_seabed["time"]
-        water_twt = float(water_twt)
+        water_depth = float(seabed["tvd_ss"])
 
         if extend2zero:
             print("EXTEND logs to z = 0")

@@ -11,16 +11,14 @@ from IPython import embed
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
-import seaborn as sns
 import numpy as np
-import git
 import plotly.graph_objects as go
 from bayesian.td_tool.runBayesDixInv import Bayesian_Inference
 from bayesian.td_tool.bayes_csc import getTime, getDrift
-from bayesian.td_tool.td_lib import getVel, resample_tvdss_md
+from bayesian.td_tool.td_lib import getVel
 import time
 import lasio
-from bayesian.td_tool.export_las import to_las, resample_log
+from bayesian.td_tool.export_las import to_las
 from bayesian.td_tool.smda_api.smda_api import get_wellbore_trajectory
 
 # from pages._3_Checkshot_Data import get_data, filter_data
@@ -77,13 +75,8 @@ with col2:
     with col1_2:
         inversion_start_depth = st.text_input(
             f"Assign from which depth the inversion is starting from..\
-                                                Standard value for well {uwi} is seabed depth: {float(df_checkshot[(df_checkshot['depth_source'] == 'seabed from smda') | (df_checkshot['depth_source'] == 'seabed detected')]['tvd_ss'])} m",
-            float(
-                df_checkshot[
-                    (df_checkshot["depth_source"] == "seabed from smda")
-                    | (df_checkshot["depth_source"] == "seabed detected")
-                ]["tvd_ss"]
-            ),
+                                                Standard value for well {uwi} is seabed depth: {float(seabed['tvd_ss'])} m",
+            float(seabed['tvd_ss']),
         )
         inversion_start_depth = float(inversion_start_depth)
 
@@ -246,6 +239,7 @@ with col2:
                 inversion_start_depth,
                 decimation_step,
                 uwi,
+                seabed,
             )
         )
         df_well = df_well.rename(columns={"TVDMSL": "tvd_ss"})
@@ -796,7 +790,7 @@ with st.form("my_form"):
                     )
             else:
                 st.write(
-                    f"Due to an unsuccessful API connection for file {uwi}, no LAS file was generated."
+                    f"Due to an unsuccessful API connection for file {uwi}, no LAS file was generated. Error: {msg}"
                 )
                 pass
         elif depth_export == "TVDSS":

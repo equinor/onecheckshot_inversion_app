@@ -12,9 +12,9 @@ with open(config_file, "r") as file:
 
 TENANT = get_config(config, "TENANT")
 CLIENT_ID = get_config(config, "CLIENT-ID")
-SCOPE = get_config(config, "SCOPE-SMDA")
+SCOPE_SMDA = get_config(config, "SCOPE-SMDA")
 CLIENT_SECRET_SMDA = get_config(config, "CLIENT-SECRET-SMDA")
-Subscription_Key = get_config(config, "Subscription-Key-SMDA")
+Subscription_Key_SMDA = get_config(config, "Subscription-Key-SMDA")
 
 
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT}"
@@ -33,7 +33,7 @@ class SmdaApiClient:
         if self._token_cache and current_time < self._token_expiry:
             return self._token_cache
 
-        result = self._app.acquire_token_for_client([SCOPE])
+        result = self._app.acquire_token_for_client([SCOPE_SMDA])
 
         if "access_token" in result:
             self._token_cache = result["access_token"]
@@ -50,7 +50,7 @@ class SmdaApiClient:
         token = self._get_token()
         return {
             "Authorization": f"Bearer {token}",
-            "Ocp-Apim-Subscription-Key": Subscription_Key,
+            "Ocp-Apim-Subscription-Key": Subscription_Key_SMDA,
             "Content-Type": "application/json",
         }
 

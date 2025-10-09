@@ -60,17 +60,20 @@ st.write(f"Well selected: {uwi}")
 
 host, dbname, user, password, sslmode = get_connect_database()
 
-columns = "md, md_unit, tvd, tvd_ss, tvd_unit, depth_reference_elevation, depth_source, time, time_unit, source_file, unique_wellbore_identifier, average_velocity, interval_velocity, qc_description, md_increasing, tvd_ss_increasing, time_increasing, average_velocity_qc, trajectory_checked, comparison_sonic_log_qc, preference_checkshotfile"
+columns = "md, md_unit, tvd, tvd_ss, tvd_unit, depth_reference_elevation, depth_source, time, time_unit, seabed_detected, sealevel_detected, source_file, unique_wellbore_identifier, average_velocity, interval_velocity, qc_description, md_increasing, tvd_ss_increasing, time_increasing, average_velocity_qc, trajectory_checked, comparison_sonic_log_qc, preference_checkshotfile"
 df = generate_df(
     host, dbname, user, password, sslmode, columns, database_checkshot, uwi
 )
 df_dsa = generate_df(host, dbname, user, password, sslmode, "*", database_dsa, uwi)
 connect.close_connection()
-seabed = df.loc[df["depth_source"].str.contains("seabed", case=False), "tvd_ss"].astype(
-    float
-)
+for col in ["seabed", "sealevel"]:
+    df[f"is_{col}"] = df[
+        "depth_source"
+    ].str.contains(col, case=False, na=False) | (
+        df[f"{col}_detected"].str.lower() == "yes"
+    )
 
-
+seabed = df[df['is_seabed'] == 1]
 col1, col2 = st.columns(2)
 with col1:
     selected_source = st.selectbox(

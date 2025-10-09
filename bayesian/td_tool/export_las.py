@@ -225,8 +225,9 @@ def plot_image(
     upscaling_x=4,
     upscaling_y=8,
 ):
-    # get colormap
-    cmap = get_colormap(color_map_name, reverse=color_map_reverse)
+    cmap = plt.get_cmap(color_map_name)
+    if color_map_reverse:
+        cmap = cmap.reversed()
 
     # parameters
     # int_method = "bilinear"
