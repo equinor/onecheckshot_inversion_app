@@ -47,10 +47,7 @@ Method: A geophone is lowered down the borehole while a seismic source at the su
 Data: The checkshot provides direct measurements of the vertical travel time of seismic waves at specific depths.       
 """
     )
-    st.image(os.path.join(os.getcwd(), "images/checkshot.jpg"), width=600)
 with col2:
-    st.image(os.path.join(os.getcwd(), "images/tidee_logo.jpg"))
-    st.image(os.path.join(os.getcwd(), "images/equinor_blue.jpg"))
     st.write(
         """
     ## SMDA in Equinor
