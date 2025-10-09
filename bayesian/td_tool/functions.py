@@ -1,5 +1,5 @@
 import numpy as np
-
+import os
 
 def color_cells(val):
     """
@@ -48,3 +48,15 @@ def decimate_dataframe(df, decimate_step):
 
     df_decimated = df.iloc[ibayes]
     return df_decimated
+
+def get_config(config, key):
+    """
+    Get config value from environment variable.
+    If environment variable does not exist, get from config file instead.
+    """
+    if key in os.environ:
+        value = os.getenv(key)
+    else:
+        value = config[key]
+    return value
+ 
